@@ -44,7 +44,7 @@ class TwitterSession(object):
         return twitter
 
     def store_access_token(self):
-        with open(data_files.access_token_keys, 'w') as file:
+        with open(data_files.get('access_token_keys'), 'w') as file:
             file.write(dumps(self.access_token))
 
     @staticmethod
