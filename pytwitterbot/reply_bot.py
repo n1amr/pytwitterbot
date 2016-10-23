@@ -1,9 +1,7 @@
-import data_files
-from file_helper import load_file_lines
+from pytwitterbot.file_helper import load_file_lines
 
 
 class ReplyBot(object):
-
     def __init__(self, client):
         super(ReplyBot, self).__init__()
         self.client = client

@@ -1,4 +1,4 @@
-from file_helper import load_file_lines
+from pytwitterbot.file_helper import load_file_lines
 from math import ceil
 import subprocess
 

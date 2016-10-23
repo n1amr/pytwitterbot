@@ -1,4 +1,4 @@
-from file_helper import load_file_lines, store_file_lines
+from pytwitterbot.file_helper import load_file_lines, store_file_lines
 import tweepy
 from traceback import print_exc
 

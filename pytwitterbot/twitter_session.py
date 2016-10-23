@@ -1,5 +1,5 @@
-import api_keys
-import data_files
+from pytwitterbot import api_keys
+from pytwitterbot import data_files
 from json import dumps, loads
 import json
 import tweepy

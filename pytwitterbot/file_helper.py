@@ -1,5 +1,5 @@
 import os
-import data_files
+from pytwitterbot import data_files
 
 
 def assert_file(path):
