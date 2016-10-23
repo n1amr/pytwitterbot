@@ -9,7 +9,6 @@ import os
 
 def main(args):
     try:
-        print('old')
         if len(args) > 1:
             root = args[1]
         else:
@@ -34,7 +33,6 @@ def main(args):
 
         return 0
     except KeyboardInterrupt:
-        print('goodbye')
         return 1
 
 
