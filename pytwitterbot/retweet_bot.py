@@ -2,12 +2,10 @@ from pytwitterbot.file_helper import load_file_lines, store_file_lines
 import tweepy
 from traceback import print_exc
 
-# TWEETS_COUNT_PER_SEARCH = 30
-TWEETS_COUNT_PER_SEARCH = 3
+TWEETS_COUNT_PER_SEARCH = 30
 
 
 class RetweetBot(object):
-
     def __init__(self, client):
         super(RetweetBot, self).__init__()
         self.client = client
