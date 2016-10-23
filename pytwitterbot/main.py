@@ -4,34 +4,43 @@ from pytwitterbot.twitter_session import TwitterSession
 from pytwitterbot.retweet_bot import RetweetBot
 from pytwitterbot.tweet_bot import TweetBot
 import sys
+import os
 
 
 def main(args):
-    root = None
-    if len(args) > 1:
-        root = args[1]
-        print('started in ', root)
+    try:
+        print('old')
+        if len(args) > 1:
+            root = args[1]
+        else:
+            root = os.environ['HOME'] + '/.pytwitterbot'
 
-    data_files.init(root)
-    file_helper.assert_all_files()
-    session = TwitterSession()
+        print('started in', root if root.startswith('/') else './' + root)
 
-    print('signed in as', session.twitter_client.me().name)
+        data_files.init(root)
+        file_helper.assert_all_files()
+        session = TwitterSession()
 
-    bots = [TweetBot(session.twitter_client),
-            RetweetBot(session.twitter_client)]
+        print('signed in as @', session.twitter_client.me().name, sep='')
 
-    for bot in bots:
-        try:
-            bot.start()
-        except Exception as e:
-            print(str(e.response.content, 'utf8'))
+        bots = [TweetBot(session.twitter_client),
+                RetweetBot(session.twitter_client)]
 
-    return 0
+        for bot in bots:
+            try:
+                bot.start()
+            except Exception as e:
+                print(str(e.response.content, 'utf8'))
+
+        return 0
+    except KeyboardInterrupt:
+        print('goodbye')
+        return 1
 
 
 def entry_point():
     raise SystemExit(main(sys.argv))
+
 
 if __name__ == '__main__':
     entry_point()

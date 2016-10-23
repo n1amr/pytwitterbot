@@ -1,13 +1,7 @@
-import os
-
 _all_files = {}
 
 
-def init(home=None):
-    if home is None:
-        home = '{user_home}/.python-twitter-bot'.format(
-            user_home=os.environ['HOME'])
-
+def init(home):
     global _all_files
     _all_files = {
         'access_token_keys': home + '/keys.json',
@@ -29,6 +23,3 @@ def get(name):
     if name in _all_files:
         return _all_files[name]
     return None
-
-
-init()

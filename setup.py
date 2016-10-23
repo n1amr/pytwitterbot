@@ -14,6 +14,8 @@ setup(name='pytwitterbot',
       author_email='n1amr1@gmail.com',
       license='MIT',
       packages=['pytwitterbot'],
+      install_requires=[
+          'tweepy'],
       entry_points={
           'console_scripts': [
               'pytbot = pytwitterbot.main:entry_point']},
