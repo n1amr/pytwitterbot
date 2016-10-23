@@ -31,6 +31,7 @@ def main(args):
             except Exception as e:
                 print(str(e.response.content, 'utf8'))
 
+        print('done')
         return 0
     except KeyboardInterrupt:
         return 1
