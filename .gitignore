@@ -1,4 +1,7 @@
+env
+build/
+dist/
+*.egg-info/
 __pycache__
 .idea
-env
-api_keys.py
+pytwitterbot/api_keys.py
