@@ -18,5 +18,5 @@ setup(name='pytwitterbot',
           'tweepy'],
       entry_points={
           'console_scripts': [
-              'pytbot = pytwitterbot.main:entry_point']},
+              'pytbot = pytwitterbot.__main__:entry_point']},
       zip_safe=False)
