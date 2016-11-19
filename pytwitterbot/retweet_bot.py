@@ -1,3 +1,4 @@
+from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines, store_file_lines
 import tweepy
 from traceback import print_exc
@@ -9,10 +10,10 @@ class RetweetBot(object):
     def __init__(self, client):
         super(RetweetBot, self).__init__()
         self.client = client
-        self.queries = load_file_lines('search_for')
-        self.marked_as_retweeted = load_file_lines('marked_as_retweeted')
-        self.muted_text = load_file_lines('muted_text')
-        self.muted_user_ids = load_file_lines('muted_user_ids')
+        self.queries = load_file_lines(data_files.SEARCH_FOR)
+        self.marked_as_retweeted = load_file_lines(data_files.MARKED_AS_RETWEETED)
+        self.muted_text = load_file_lines(data_files.MUTED_TEXT)
+        self.muted_user_ids = load_file_lines(data_files.MUTED_USER_IDS)
         self.bot_user_id = client.me().id_str
 
     def start(self):
@@ -32,7 +33,7 @@ class RetweetBot(object):
 
                 user_id = tweet.user.id_str
                 if (self.bot_user_id == user_id or
-                        user_id in self.muted_user_ids):
+                            user_id in self.muted_user_ids):
                     continue
 
                 skip = False
@@ -49,7 +50,7 @@ class RetweetBot(object):
 
                 self.marked_as_retweeted.append(tweet.id_str)
             self.marked_as_retweeted.sort()
-            store_file_lines('marked_as_retweeted', self.marked_as_retweeted)
+            store_file_lines(data_files.MARKED_AS_RETWEETED, self.marked_as_retweeted)
 
     def retweet(self, tweet):
         print('=' * 50)

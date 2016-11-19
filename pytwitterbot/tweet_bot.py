@@ -1,3 +1,4 @@
+from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines
 from math import ceil
 import subprocess
@@ -8,7 +9,7 @@ class TweetBot(object):
     def __init__(self, client):
         super(TweetBot, self).__init__()
         self.client = client
-        self.commands = load_file_lines('commands')
+        self.commands = load_file_lines(data_files.COMMANDS)
 
     def start(self):
         for command in self.commands:

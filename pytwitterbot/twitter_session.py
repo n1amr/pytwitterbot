@@ -44,13 +44,13 @@ class TwitterSession(object):
         return twitter
 
     def store_access_token(self):
-        with open(data_files.get('access_token_keys'), 'w') as file:
+        with open(data_files.get(data_files.ACCESS_TOKEN_KEYS), 'w') as file:
             file.write(dumps(self.access_token))
 
     @staticmethod
     def load_access_token():
         access_token = None
-        with open(data_files.get('access_token_keys'), 'r') as file:
+        with open(data_files.get(data_files.ACCESS_TOKEN_KEYS), 'r') as file:
             json_text = file.read()
             try:
                 access_token = loads(json_text)
