@@ -23,7 +23,7 @@ class TweetBot(object):
             try:
                 print('=' * 50)
                 print('$', command)
-                print('Tweeting')
+                print('tweeting')
                 if len(msg) <= 140:
                     print(msg)
                     self.client.update_status(msg)

@@ -16,7 +16,7 @@ class TwitterSession(object):
         try:
             auth_url = auth.get_authorization_url()
             print(auth_url)
-            print('Please visit the URL and enter the code: ')
+            print('please visit the URL and enter the code: ')
             pin = input('PIN: ').strip()
             auth.get_access_token(pin)
 
@@ -25,7 +25,7 @@ class TwitterSession(object):
                 'access_token_secret': auth.access_token_secret}
             self.store_access_token()
         except tweepy.TweepError:
-            print('Error! Failed to get request token.')
+            print('error! failed to get request token.')
 
     def get_api_client(self):
         auth = tweepy.OAuthHandler(
@@ -55,5 +55,5 @@ class TwitterSession(object):
             try:
                 access_token = loads(json_text)
             except json.decoder.JSONDecodeError:
-                print('Cannot load access token')
+                print('cannot load access token')
         return access_token

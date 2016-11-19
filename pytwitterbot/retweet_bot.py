@@ -18,7 +18,7 @@ class RetweetBot(object):
 
     def start(self):
         for query in self.queries:
-            print('Searching for', query)
+            print('searching for', query)
             tweets = tweepy.Cursor(self.client.search,
                                    q=query + ' -filter:retweets',
                                    count=TWEETS_COUNT_PER_SEARCH,
@@ -54,7 +54,7 @@ class RetweetBot(object):
 
     def retweet(self, tweet):
         print('=' * 50)
-        print('Retweeting #' + tweet.id_str)
+        print('retweeting #' + tweet.id_str)
         print(tweet.text)
         tweet.retweet()
         print('=' * 50)
