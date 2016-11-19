@@ -1,7 +1,8 @@
+import subprocess
+from math import ceil
+
 from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines
-from math import ceil
-import subprocess
 
 
 class TweetBot(object):

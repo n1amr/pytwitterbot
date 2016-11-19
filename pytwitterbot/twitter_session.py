@@ -1,8 +1,10 @@
+import json
+from json import dumps, loads
+
+import tweepy
+
 from pytwitterbot import api_keys
 from pytwitterbot import data_files
-from json import dumps, loads
-import json
-import tweepy
 
 
 class TwitterSession(object):

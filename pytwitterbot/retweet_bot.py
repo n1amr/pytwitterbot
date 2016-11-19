@@ -1,7 +1,9 @@
+from traceback import print_exc
+
+import tweepy
+
 from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines, store_file_lines
-import tweepy
-from traceback import print_exc
 
 TWEETS_COUNT_PER_SEARCH = 30
 
