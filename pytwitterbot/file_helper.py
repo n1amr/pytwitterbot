@@ -1,5 +1,6 @@
 import os
 from pytwitterbot import data_files
+from json import loads, dumps
 
 
 def assert_file(path):
@@ -25,3 +26,14 @@ def load_file_lines(filename):
 def store_file_lines(filename, lines):
     with open(data_files.get(filename), 'w') as file:
         file.write('\n'.join(lines))
+
+
+def load_json_file(filename):
+    with open(data_files.get(filename), 'r') as file:
+        j_obj = loads(file.read())
+    return j_obj
+
+
+def store_json_file(filename, j_obj):
+    with open(data_files.get(filename), 'w') as file:
+        file.write(dumps(j_obj))
