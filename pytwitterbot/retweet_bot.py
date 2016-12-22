@@ -1,6 +1,7 @@
 from traceback import print_exc
 
 import tweepy
+from tweepy.error import TweepError
 
 from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines, store_file_lines
@@ -48,6 +49,10 @@ class RetweetBot(object):
                     try:
                         self.retweet(tweet)
                         self.marked_as_retweeted.append(tweet.id_str)
+                    except TweepError as e:
+                        print(e)
+                        if e.api_code == 327:
+                            self.marked_as_retweeted.append(tweet.id_str)
                     except Exception:
                         print_exc()
 
