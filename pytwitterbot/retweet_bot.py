@@ -40,17 +40,17 @@ class RetweetBot(object):
 
                 skip = False
                 for pattern in self.muted_text:
-                    if tweet.text.find(pattern) >= 0:
+                    if len(pattern) > 0 and tweet.text.find(pattern) >= 0:
                         skip = True
                         break
 
                 if not skip:
                     try:
                         self.retweet(tweet)
+                        self.marked_as_retweeted.append(tweet.id_str)
                     except Exception:
                         print_exc()
 
-                self.marked_as_retweeted.append(tweet.id_str)
             self.marked_as_retweeted.sort()
             store_file_lines(data_files.MARKED_AS_RETWEETED, self.marked_as_retweeted)
 
