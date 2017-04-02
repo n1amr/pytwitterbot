@@ -1,4 +1,4 @@
-_all_files = {}
+import os
 
 ACCESS_TOKEN_KEYS = 'ACCESS_TOKEN_KEYS'
 SEARCH_FOR = 'SEARCH_FOR'
@@ -9,19 +9,25 @@ MUTED_TEXT = 'MUTED_TEXT'
 MUTED_USER_IDS = 'MUTED_USER_IDS'
 COMMANDS = 'COMMANDS'
 
+FILE_NAMES = {
+    ACCESS_TOKEN_KEYS: 'keys.json',
+    SEARCH_FOR: 'search-for.txt',
+    REPLIES: 'replies.txt',
+    MARKED_AS_REPLIED: 'marked-as-replied.dat',
+    MARKED_AS_RETWEETED: 'marked-as-retweeted.dat',
+    MUTED_TEXT: 'muted-text.txt',
+    MUTED_USER_IDS: 'muted-users-ids.txt',
+    COMMANDS: 'commands.txt',
+}
+
+_all_files = {}
+
 
 def init(home):
     global _all_files
-    _all_files = {
-        ACCESS_TOKEN_KEYS: home + '/keys.json',
-        SEARCH_FOR: home + '/search-for.txt',
-        REPLIES: home + '/replies.txt',
-        MARKED_AS_REPLIED: home + '/marked-as-replied.dat',
-        MARKED_AS_RETWEETED: home + '/marked-as-retweeted.dat',
-        MUTED_TEXT: home + '/muted-text.txt',
-        MUTED_USER_IDS: home + '/muted-users-ids.txt',
-        COMMANDS: home + '/commands.txt',
-    }
+    _all_files = {}
+    for k, v in FILE_NAMES.items():
+        _all_files[k] = os.path.join(home, v)
 
 
 def get_all_files():

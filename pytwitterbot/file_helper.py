@@ -6,9 +6,9 @@ from pytwitterbot import data_files
 
 def assert_file(path):
     if not os.path.exists(path):
-        dirname = os.path.dirname(path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+        dir_name = os.path.dirname(path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
         file = open(path, 'w')
         file.close()
 

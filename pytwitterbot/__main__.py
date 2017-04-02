@@ -1,5 +1,4 @@
 import os
-
 import sys
 
 from pytwitterbot import data_files
@@ -13,16 +12,16 @@ def main(args):
     try:
         if len(args) > 1:
             root = args[1]
+            print(f"started in {os.path.relpath(root)}")
         else:
-            root = os.environ['HOME'] + '/.pytwitterbot'
-
-        print('started in', root if root.startswith('/') else './' + root)
+            root = os.path.join(os.path.expanduser('~'), '.pytwitterbot')
+            print(f"started in {root}")
 
         data_files.init(root)
         file_helper.assert_all_files()
         session = TwitterSession()
 
-        print('signed in as @', session.twitter_client.me().name, sep='')
+        print(f'signed in as @{session.twitter_client.me().name}')
 
         bots = [TweetBot(session.twitter_client),
                 RetweetBot(session.twitter_client)]

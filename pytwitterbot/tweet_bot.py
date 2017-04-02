@@ -1,5 +1,4 @@
 import subprocess
-
 from math import ceil
 
 from pytwitterbot import data_files
@@ -14,16 +13,16 @@ class TweetBot(object):
 
     def start(self):
         for command in self.commands:
-            print(command)
-            process = subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                shell=True)
+            print('=' * 50)
+            print(f' $ {command}')
+            process = subprocess.Popen(command,
+                                       stdout=subprocess.PIPE,
+                                       shell=True)
             out, err = process.communicate()
             msg = str(out, 'utf8').rstrip()
+            print(f'{msg}')
+            print('-' * 50)
             try:
-                print('=' * 50)
-                print('$', command)
                 print('tweeting')
                 if len(msg) <= 140:
                     print(msg)
@@ -49,7 +48,7 @@ def split(s, max_size, dots_size=3):
 
     max_size -= dots_size * 2
     n -= dots_size
-    for i in range(ceil(n / max_size)):
+    for i in range(int(ceil(n / max_size))):
         yield (s1 if i == 0 else dots) + \
               s[i * max_size: (i + 1) * max_size] + \
               (s2 if i == ceil(n / max_size) - 1 else dots)
