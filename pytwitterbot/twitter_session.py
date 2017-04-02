@@ -8,7 +8,6 @@ from pytwitterbot import data_files
 
 
 class TwitterSession(object):
-
     def __init__(self):
         super(TwitterSession, self).__init__()
         self.access_token = self.load_access_token()

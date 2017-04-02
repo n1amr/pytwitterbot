@@ -1,4 +1,5 @@
 import subprocess
+
 from math import ceil
 
 from pytwitterbot import data_files
@@ -6,7 +7,6 @@ from pytwitterbot.file_helper import load_file_lines
 
 
 class TweetBot(object):
-
     def __init__(self, client):
         super(TweetBot, self).__init__()
         self.client = client
@@ -51,5 +51,5 @@ def split(s, max_size, dots_size=3):
     n -= dots_size
     for i in range(ceil(n / max_size)):
         yield (s1 if i == 0 else dots) + \
-            s[i * max_size: (i + 1) * max_size] + \
-            (s2 if i == ceil(n / max_size) - 1 else dots)
+              s[i * max_size: (i + 1) * max_size] + \
+              (s2 if i == ceil(n / max_size) - 1 else dots)

@@ -14,7 +14,8 @@ class RetweetBot(object):
         super(RetweetBot, self).__init__()
         self.client = client
         self.queries = load_file_lines(data_files.SEARCH_FOR)
-        self.marked_as_retweeted = load_file_lines(data_files.MARKED_AS_RETWEETED)
+        self.marked_as_retweeted = load_file_lines(
+            data_files.MARKED_AS_RETWEETED)
         self.muted_text = load_file_lines(data_files.MUTED_TEXT)
         self.muted_user_ids = load_file_lines(data_files.MUTED_USER_IDS)
         self.bot_user_id = client.me().id_str
@@ -57,7 +58,8 @@ class RetweetBot(object):
                         print_exc()
 
             self.marked_as_retweeted.sort()
-            store_file_lines(data_files.MARKED_AS_RETWEETED, self.marked_as_retweeted)
+            store_file_lines(data_files.MARKED_AS_RETWEETED,
+                             self.marked_as_retweeted)
 
     def retweet(self, tweet):
         print('=' * 50)

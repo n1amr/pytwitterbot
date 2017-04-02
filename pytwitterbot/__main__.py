@@ -1,4 +1,5 @@
 import os
+
 import sys
 
 from pytwitterbot import data_files
