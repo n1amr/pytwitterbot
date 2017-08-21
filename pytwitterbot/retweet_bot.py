@@ -24,7 +24,7 @@ class RetweetBot(object):
         for query in self.queries:
             print('searching for', query)
             cursor = tweepy.Cursor(self.client.search,
-                                   q=f'{query} -filter:retweets',
+                                   q='{} -filter:retweets'.format(query),
                                    count=TWEETS_COUNT_PER_SEARCH,
                                    result_type='recent', include_entities=False)
             cursor_items = cursor.items()
@@ -66,7 +66,7 @@ class RetweetBot(object):
 
     def retweet(self, tweet):
         print('=' * 50)
-        print(f'retweeting #{tweet.id_str}, created at: {tweet.created_at}')
+        print('retweeting #{}, created at: {}'.format(tweet.id_str, tweet.created_at))
         print(tweet.text)
         tweet.retweet()
         print('=' * 50)

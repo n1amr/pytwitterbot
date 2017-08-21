@@ -12,16 +12,16 @@ def main(args):
     try:
         if len(args) > 1:
             root = args[1]
-            print(f"started in {os.path.relpath(root)}")
+            print("started in {}".format(os.path.relpath(root)))
         else:
             root = os.path.join(os.path.expanduser('~'), '.pytwitterbot')
-            print(f"started in {root}")
+            print("started in {}".format(root))
 
         data_files.init(root)
         file_helper.assert_all_files()
         session = TwitterSession()
 
-        print(f'signed in as @{session.twitter_client.me().name}')
+        print('signed in as @{}'.format(session.twitter_client.me().name))
 
         bots = [TweetBot(session.twitter_client),
                 RetweetBot(session.twitter_client)]

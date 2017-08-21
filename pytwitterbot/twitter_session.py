@@ -55,6 +55,6 @@ class TwitterSession(object):
             json_text = file.read()
             try:
                 access_token = loads(json_text)
-            except json.decoder.JSONDecodeError:
+            except:
                 print('cannot load access token')
         return access_token

@@ -14,13 +14,13 @@ class TweetBot(object):
     def start(self):
         for command in self.commands:
             print('=' * 50)
-            print(f' $ {command}')
+            print(' $ {}'.format(command))
             process = subprocess.Popen(command,
                                        stdout=subprocess.PIPE,
                                        shell=True)
             out, err = process.communicate()
             msg = str(out, 'utf8').rstrip()
-            print(f'{msg}')
+            print(msg)
             print('-' * 50)
             try:
                 print('tweeting')
