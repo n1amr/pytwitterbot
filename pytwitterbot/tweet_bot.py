@@ -24,11 +24,11 @@ class TweetBot(object):
             print('-' * 50)
             try:
                 print('tweeting')
-                if len(msg) <= 140:
+                if len(msg) <= 280:
                     print(msg)
                     self.client.update_status(msg)
                 else:
-                    for m in split(msg, 140, 3):
+                    for m in split(msg, 280, 3):
                         print(m)
                         self.client.update_status(m)
                 print('=' * 50)
