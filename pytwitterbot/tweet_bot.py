@@ -40,6 +40,7 @@ def split(s, max_size, dots_size=3):
     n = len(s)
     if n <= max_size:
         yield s
+        return
 
     s1 = s[:dots_size]
     s2 = s[-dots_size:]
