@@ -13,22 +13,39 @@ class TweetBot(object):
 
     def start(self):
         for command in self.commands:
+            if command.strip().startswith('#'):
+                continue
+
             print('=' * 50)
             print(' $ {}'.format(command))
-            process = subprocess.Popen(command,
-                                       stdout=subprocess.PIPE,
-                                       shell=True)
-            out, err = process.communicate()
-            msg = str(out, 'utf8').rstrip()
-            print(msg)
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                shell=True,
+                text=True,
+                encoding='utf-8',
+                universal_newlines=True,
+            )
+            output, error = process.communicate()
+            if error:
+                print(f'Error: {error}')
+
+            if not len(output):
+                print(f'WARNING: Empty output')
+                continue
+
+            print(output)
             print('-' * 50)
+
+            tweet_text = output.strip()
+
             try:
                 print('tweeting')
-                if len(msg) <= 280:
-                    print(msg)
-                    self.client.update_status(msg)
+                if len(tweet_text) <= 280:
+                    print(tweet_text)
+                    self.client.update_status(tweet_text)
                 else:
-                    for m in split(msg, 280, 3):
+                    for m in split(tweet_text, 280, 3):
                         print(m)
                         self.client.update_status(m)
                 print('=' * 50)
