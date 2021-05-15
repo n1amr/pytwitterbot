@@ -2,19 +2,20 @@ import logging
 import math
 import subprocess
 
-from pytwitterbot import data_files
-from pytwitterbot.file_helper import load_file_lines
+import tweepy
+
+from pytwitterbot.config import Config
 
 log = logging.getLogger(__name__)
 
-MAX_TWEET_LENGTH = 280
 
-
-class TweetBot(object):
-    def __init__(self, client):
+class TweetBot:
+    def __init__(self, twitter: tweepy.API, config: Config):
         super(TweetBot, self).__init__()
-        self.client = client
-        self.commands = load_file_lines(data_files.COMMANDS)
+
+        self.twitter = twitter
+        self.config = config
+        self.commands = config.commands
 
     def start(self):
         for command in self.commands:
@@ -34,41 +35,45 @@ class TweetBot(object):
             if error:
                 log.error(f'Error while executing command: {error}')
 
-            if not len(output):
-                log.warning(f'Command printed no output')
+            log.info(f'Command output:\n{output}')
+
+            tweet_text = output.strip()
+            if not len(tweet_text):
+                log.warning(f'Skipped tweeting an empty tweet')
                 continue
 
-            log.info(f'Command output:\n{output}')
-            tweet_text = output.strip()
-
             try:
-                for chunk in chunk_text(tweet_text, MAX_TWEET_LENGTH, 3):
+                chunks = chunk_text(tweet_text, self.config.max_tweet_length)
+                for chunk in chunks:
                     log.info(f'Will tweet:\n{chunk}')
-                    self.client.update_status(chunk)
+                    self.twitter.update_status(chunk)
             except Exception as e:
                 log.error(e)
                 log.exception(e)
 
 
-def chunk_text(text, max_size: int, dots_size: int = 3):
-    length = len(text)
-
-    if length <= max_size:
+def chunk_text(text, max_length: int, dots_length: int = 3):
+    if len(text) <= max_length:
         yield text
         return
 
-    s1 = text[:dots_size]
-    s2 = text[-dots_size:]
-    text = text[dots_size:-dots_size]
-    dots = '.' * dots_size
+    prefix = '.' * dots_length + ' '
+    suffix = ' ' + '.' * dots_length
+    assert max_length > len(prefix) + len(suffix)
 
-    max_size -= dots_size * 2
-    length -= dots_size
-    for i in range(int(math.ceil(length / max_size))):
-        chunk = (
-            (s1 if i == 0 else dots)
-            + text[i * max_size: (i + 1) * max_size]
-            + (s2 if i == math.ceil(length / max_size) - 1 else dots)
-        )
-        assert len(chunk) <= max_size, [len(chunk), max_size, chunk]
+    first_prefix = text[:len(prefix)]
+    last_suffix = text[-len(suffix):]
+    middle_text = text[len(prefix):-len(suffix)]
+    middle_length = len(middle_text)
+    max_content_length = max_length - (len(prefix) + len(suffix))
+
+    chunks_count = int(math.ceil(middle_length / max_content_length))
+    for i in range(chunks_count):
+        chunk = ''.join((
+            first_prefix if i == 0 else prefix,
+            middle_text[i * max_content_length: (i + 1) * max_content_length],
+            last_suffix if i == chunks_count - 1 else suffix,
+        ))
+        assert len(chunk) <= max_length, [len(chunk), max_length, chunk]
+        assert len(chunk)
         yield chunk

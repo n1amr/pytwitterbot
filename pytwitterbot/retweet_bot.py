@@ -4,39 +4,43 @@ import tweepy
 from traceback import print_exc
 from tweepy.error import TweepError
 
-from pytwitterbot import data_files
-from pytwitterbot.file_helper import load_file_lines, load_commentable_file, store_file_lines
+from pytwitterbot.config import Config
 
 log = logging.getLogger(__name__)
 
-TWEETS_COUNT_PER_SEARCH = 30
 
-
-class RetweetBot(object):
-    def __init__(self, client):
+class RetweetBot:
+    def __init__(self, twitter: tweepy.API, config: Config):
         super(RetweetBot, self).__init__()
-        self.client = client
-        self.queries = load_commentable_file(data_files.SEARCH_FOR)
-        self.marked_as_retweeted = set(load_file_lines(data_files.MARKED_AS_RETWEETED))
-        self.muted_text = set(load_commentable_file(data_files.MUTED_TEXT))
-        self.muted_user_ids = set(load_commentable_file(data_files.MUTED_USER_IDS))
-        self.muted_usernames = set(load_commentable_file(data_files.MUTED_USERNAMES))
-        self.bot_user_id = client.me().id_str
+
+        self.twitter = twitter
+        self.bot_user_id = twitter.me().id_str
+
+        self.config = config
+
+        self.marked_as_retweeted_path = config.marked_as_retweeted
+
+        self.queries = config.queries
+        self.marked_as_retweeted = config.marked_as_retweeted
+        self.muted_text = config.muted_text
+        self.muted_user_ids = config.muted_user_ids
+        self.muted_usernames = config.muted_usernames
+
 
     def start(self):
         for query in self.queries:
             log.info(f'Searching for: {query}')
             cursor = tweepy.Cursor(
-                self.client.search,
+                self.twitter.search,
                 q=f'{query} -filter:retweets',
-                count=TWEETS_COUNT_PER_SEARCH,
+                count=self.config.tweets_count_per_search,
                 result_type='recent',
                 include_entities=False,
             )
 
             recent_tweets = []
             for tweet in cursor.items():
-                if len(recent_tweets) >= TWEETS_COUNT_PER_SEARCH:
+                if len(recent_tweets) >= self.config.tweets_count_per_search:
                     break
                 recent_tweets.append(tweet)
 
@@ -44,20 +48,17 @@ class RetweetBot(object):
                 if self.should_retweet(tweet):
                     self.retweet(tweet)
 
-            store_file_lines(
-                data_files.MARKED_AS_RETWEETED,
-                list(sorted(self.marked_as_retweeted)),
-            )
+            self.config.commit_retweeted_marks()
 
     def retweet(self, tweet):
         try:
             log.info(f'Will retweet. tweet id: {tweet.id_str}, created at: {tweet.created_at}, text:\n' + tweet.text)
             tweet.retweet()
             log.info('Retweeted successfully')
-            self.marked_as_retweeted.append(tweet.id_str)
+            self.config.mark_retweeted(tweet.id_str)
         except TweepError as e:
             if e.api_code == 327:
-                self.marked_as_retweeted.append(tweet.id_str)
+                self.config.mark_retweeted(tweet.id_str)
             else:
                 log.error(e)
                 log.exception(e)
@@ -76,19 +77,19 @@ class RetweetBot(object):
 
         for pattern in self.muted_text:
             if len(pattern) > 0 and text.find(pattern) >= 0:
-                log.info(f'Skip tweet for muled pattern: |{pattern}|, text:\n' + text)
+                log.debug(f'Skip tweet for muled pattern: |{pattern}|, text:\n' + text)
                 return False
 
         if self.bot_user_id == user_id:
-            log.info('Skipped tweet from self.')
+            log.debug('Skipped tweet from self.')
             return False
 
         if user_id in self.muted_user_ids:
-            log.info(f'Skipped tweet from muted user id: {user_id}, text:\n' + text)
+            log.debug(f'Skipped tweet from muted user id: {user_id}, text:\n' + text)
             return False
 
         if username in self.muted_usernames:
-            log.info(f'Skipped tweet from muted username: {username}, text:\n' + text)
+            log.debug(f'Skipped tweet from muted username: {username}, text:\n' + text)
             return False
 
         return True

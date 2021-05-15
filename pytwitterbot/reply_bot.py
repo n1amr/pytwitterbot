@@ -1,12 +1,13 @@
-from pytwitterbot import data_files
-from pytwitterbot.file_helper import load_file_lines, load_commentable_file
+from pytwitterbot.config import Config
 
 
-class ReplyBot(object):
-    def __init__(self, client):
+class ReplyBot:
+    def __init__(self, twitter, config: Config):
         super(ReplyBot, self).__init__()
-        self.client = client
-        self.queries = load_commentable_file(data_files.SEARCH_FOR)
-        self.replies = load_file_lines(data_files.REPLIES)
-        self.marked_as_replied = load_file_lines(data_files.MARKED_AS_REPLIED)
-        self.bot_user_id = client.me().id_str
+
+        self.twitter = twitter
+        self.bot_user_id = twitter.me().id_str
+
+        self.queries = config.queries
+        self.replies = config.replies
+        self.marked_as_replied = config.marked_as_replied

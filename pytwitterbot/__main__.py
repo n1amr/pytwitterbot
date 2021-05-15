@@ -4,14 +4,13 @@ import argparse
 import logging
 import os
 import sys
-import tempfile
 import time
 
-from pytwitterbot import data_files
-from pytwitterbot import file_helper
+from pytwitterbot.authenticator import Authenticator
+from pytwitterbot.config import Config
 from pytwitterbot.retweet_bot import RetweetBot
 from pytwitterbot.tweet_bot import TweetBot
-from pytwitterbot.twitter_session import TwitterSession
+
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -20,13 +19,13 @@ log = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('bot_dir', type=str, default=None)
+    parser.add_argument('bot_home', type=str, default=None)
 
     args = parser.parse_args()
 
-    if args.bot_dir is None:
-        args.bot_dir = os.path.join(os.path.expanduser('~'), '.pytwitterbot')
-    args.bot_dir = os.path.abspath(args.bot_dir)
+    if args.bot_home is None:
+        args.bot_home = os.path.join(os.path.expanduser('~'), '.pytwitterbot')
+    args.bot_home = os.path.abspath(args.bot_home)
 
     return args
 
@@ -34,19 +33,19 @@ def parse_args():
 def main(args: argparse.Namespace):
     log.info(f'Args: {args}')
 
-    bot_dir = args.bot_dir
+    bot_home = args.bot_home
 
-    log.info(f'Started in directory {bot_dir}')
+    log.info(f'Started in directory {bot_home}')
 
-    data_files.init(bot_dir)
-    file_helper.assert_all_files()
-    session = TwitterSession()
+    config = Config(bot_home)
+    authenticator = Authenticator(config)
+    twitter = authenticator.get_api_client()
 
-    log.info(f'Signed in as @{session.twitter_client.me().name}')
+    log.info(f'Signed in as: {twitter.me().name} (@{twitter.me().screen_name})')
 
     bots = [
-        TweetBot(session.twitter_client),
-        RetweetBot(session.twitter_client),
+        TweetBot(twitter, config),
+        RetweetBot(twitter, config),
     ]
 
     for bot in bots:
@@ -90,7 +89,7 @@ def setup_logging(log_file: str):
 
 def entry_point():
     args = parse_args()
-    log_file = os.path.abspath(os.path.join(args.bot_dir, 'log'))
+    log_file = os.path.abspath(os.path.join(args.bot_home, 'log'))
     setup_logging(log_file)
     try:
         sys.exit(main(args))
