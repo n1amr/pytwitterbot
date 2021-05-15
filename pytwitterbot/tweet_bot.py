@@ -1,8 +1,13 @@
+import logging
+import math
 import subprocess
-from math import ceil
 
 from pytwitterbot import data_files
 from pytwitterbot.file_helper import load_file_lines
+
+log = logging.getLogger(__name__)
+
+MAX_TWEET_LENGTH = 280
 
 
 class TweetBot(object):
@@ -16,8 +21,7 @@ class TweetBot(object):
             if command.strip().startswith('#'):
                 continue
 
-            print('=' * 50)
-            print(' $ {}'.format(command))
+            log.info(f'Executing command: $ {command}')
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -28,45 +32,43 @@ class TweetBot(object):
             )
             output, error = process.communicate()
             if error:
-                print(f'Error: {error}')
+                log.error(f'Error while executing command: {error}')
 
             if not len(output):
-                print(f'WARNING: Empty output')
+                log.warning(f'Command printed no output')
                 continue
 
-            print(output)
-            print('-' * 50)
-
+            log.info(f'Command output:\n{output}')
             tweet_text = output.strip()
 
             try:
-                print('tweeting')
-                if len(tweet_text) <= 280:
-                    print(tweet_text)
-                    self.client.update_status(tweet_text)
-                else:
-                    for m in split(tweet_text, 280, 3):
-                        print(m)
-                        self.client.update_status(m)
-                print('=' * 50)
+                for chunk in chunk_text(tweet_text, MAX_TWEET_LENGTH, 3):
+                    log.info(f'Will tweet:\n{chunk}')
+                    self.client.update_status(chunk)
             except Exception as e:
-                print(e)
+                log.error(e)
+                log.exception(e)
 
 
-def split(s, max_size, dots_size=3):
-    n = len(s)
-    if n <= max_size:
-        yield s
+def chunk_text(text, max_size: int, dots_size: int = 3):
+    length = len(text)
+
+    if length <= max_size:
+        yield text
         return
 
-    s1 = s[:dots_size]
-    s2 = s[-dots_size:]
-    s = s[dots_size: -dots_size]
+    s1 = text[:dots_size]
+    s2 = text[-dots_size:]
+    text = text[dots_size:-dots_size]
     dots = '.' * dots_size
 
     max_size -= dots_size * 2
-    n -= dots_size
-    for i in range(int(ceil(n / max_size))):
-        yield (s1 if i == 0 else dots) + \
-              s[i * max_size: (i + 1) * max_size] + \
-              (s2 if i == ceil(n / max_size) - 1 else dots)
+    length -= dots_size
+    for i in range(int(math.ceil(length / max_size))):
+        chunk = (
+            (s1 if i == 0 else dots)
+            + text[i * max_size: (i + 1) * max_size]
+            + (s2 if i == math.ceil(length / max_size) - 1 else dots)
+        )
+        assert len(chunk) <= max_size, [len(chunk), max_size, chunk]
+        yield chunk

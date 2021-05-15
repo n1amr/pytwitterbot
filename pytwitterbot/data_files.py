@@ -7,6 +7,7 @@ MARKED_AS_REPLIED = 'MARKED_AS_REPLIED'
 MARKED_AS_RETWEETED = 'MARKED_AS_RETWEETED'
 MUTED_TEXT = 'MUTED_TEXT'
 MUTED_USER_IDS = 'MUTED_USER_IDS'
+MUTED_USERNAMES = 'MUTED_USERNAMES'
 COMMANDS = 'COMMANDS'
 
 FILE_NAMES = {
@@ -17,6 +18,7 @@ FILE_NAMES = {
     MARKED_AS_RETWEETED: 'marked-as-retweeted.dat',
     MUTED_TEXT: 'muted-text.txt',
     MUTED_USER_IDS: 'muted-users-ids.txt',
+    MUTED_USERNAMES: 'muted-users.txt',
     COMMANDS: 'commands.txt',
 }
 

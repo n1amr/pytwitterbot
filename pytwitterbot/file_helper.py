@@ -1,5 +1,5 @@
+import json
 import os
-from json import loads, dumps
 
 from pytwitterbot import data_files
 
@@ -23,7 +23,7 @@ def load_file_lines(filename):
         return [line.rstrip('\r\n') for line in file]
 
 
-def load_queries_file(path):
+def load_commentable_file(path):
     lines = load_file_lines(path)
     lines = [line.strip() for line in lines]
     lines = [line for line in lines if not line.startswith('#')]
@@ -37,11 +37,10 @@ def store_file_lines(filename, lines):
 
 
 def load_json_file(filename):
-    with open(data_files.get(filename), 'r') as file:
-        j_obj = loads(file.read())
-    return j_obj
+    with open(data_files.get(filename), 'r', encoding='utf-8') as file:
+        return json.load(file)
 
 
 def store_json_file(filename, j_obj):
-    with open(data_files.get(filename), 'w') as file:
-        file.write(dumps(j_obj))
+    with open(data_files.get(filename), 'w', encoding='utf-8') as file:
+        json.dump(j_obj, f, indent=2, ensure_ascii=False)
