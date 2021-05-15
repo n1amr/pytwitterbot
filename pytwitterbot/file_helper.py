@@ -20,7 +20,14 @@ def assert_all_files():
 
 def load_file_lines(filename):
     with open(data_files.get(filename), 'r') as file:
-        lines = file.read().splitlines()
+        return [line.rstrip('\r\n') for line in file]
+
+
+def load_queries_file(path):
+    lines = load_file_lines(path)
+    lines = [line.strip() for line in lines]
+    lines = [line for line in lines if not line.startswith('#')]
+    lines = [line for line in lines if line]
     return lines
 
 

@@ -4,7 +4,7 @@ import tweepy
 from tweepy.error import TweepError
 
 from pytwitterbot import data_files
-from pytwitterbot.file_helper import load_file_lines, store_file_lines
+from pytwitterbot.file_helper import load_file_lines, load_queries_file, store_file_lines
 
 TWEETS_COUNT_PER_SEARCH = 30
 
@@ -13,7 +13,7 @@ class RetweetBot(object):
     def __init__(self, client):
         super(RetweetBot, self).__init__()
         self.client = client
-        self.queries = load_file_lines(data_files.SEARCH_FOR)
+        self.queries = load_queries_file(data_files.SEARCH_FOR)
         self.marked_as_retweeted = load_file_lines(
             data_files.MARKED_AS_RETWEETED)
         self.muted_text = load_file_lines(data_files.MUTED_TEXT)
