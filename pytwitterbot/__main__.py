@@ -9,6 +9,7 @@ import time
 from pytwitterbot.authenticator import Authenticator
 from pytwitterbot.config import Config
 from pytwitterbot.retweet_bot import RetweetBot
+from pytwitterbot.saver_bot import SaverBot
 from pytwitterbot.tweet_bot import TweetBot
 
 
@@ -43,11 +44,7 @@ def main(args: argparse.Namespace):
 
     log.info(f'Signed in as: {twitter.me().name} (@{twitter.me().screen_name})')
 
-    bots = [
-        TweetBot(twitter, config),
-        RetweetBot(twitter, config),
-    ]
-
+    bots = create_bots(twitter, config)
     for bot in bots:
         try:
             bot.start()
@@ -62,6 +59,21 @@ def main(args: argparse.Namespace):
     log.info('Finished')
 
     return 0
+
+
+def create_bots(twitter, config: Config):
+    settings = config.settings
+
+    bots = []
+
+    if settings.get('bots.tweet.enabled', True):
+        bots.append(TweetBot(twitter, config))
+    if settings.get('bots.retweet.enabled', True):
+        bots.append(RetweetBot(twitter, config))
+    if settings.get('bots.saver.enabled', False):
+        bots.append(SaverBot(twitter, config))
+
+    return bots
 
 
 def setup_logging(log_file: str):

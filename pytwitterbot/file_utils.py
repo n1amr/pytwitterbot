@@ -2,8 +2,12 @@ import json
 import os
 
 
-def touch_file(path):
+def ensure_parent_dir(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
+
+def touch_file(path):
+    ensure_parent_dir(path)
     if not os.path.exists(path):
         with open(path, 'a'):
             pass
@@ -14,9 +18,21 @@ def load_json(path):
         return json.load(file)
 
 
+def load_text(path):
+    with open(path, 'r', encoding='utf-8') as file:
+        return file.read()
+
+
 def write_json(data, path):
+    ensure_parent_dir(path)
     with open(path, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=2, ensure_ascii=False)
+
+
+def write_text(text, path):
+    ensure_parent_dir(path)
+    with open(path, 'w', encoding='utf-8') as file:
+        file.write(text)
 
 
 def load_text_lines(path):
@@ -25,6 +41,7 @@ def load_text_lines(path):
 
 
 def write_text_lines(lines, path):
+    ensure_parent_dir(path)
     with open(path, 'w') as file:
         file.write('\n'.join(lines))
 
