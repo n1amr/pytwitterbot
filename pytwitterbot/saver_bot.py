@@ -228,8 +228,13 @@ class SaverBot:
             except Exception as e:
                 log.exception(e)
                 log.error(e)
+                log.warning(response.status_code)
                 if trials == 0:
-                    raise
+                    log.exception(e)
+                    return media_url
+                    pass
+                    break
+                    # raise
 
         ensure_parent_dir(output_path)
         with open(output_path, 'wb') as f:
@@ -267,8 +272,11 @@ def _log_statistics(tweets: List[Status], save_path: str):
 
     user_to_tweets = {}
     for tweet in tweets:
+        if datetime.datetime.utcnow() - tweet.created_at > datetime.timedelta(days=1):
+            continue
         user = tweet.user.screen_name
         user_to_tweets.setdefault(user, []).append(tweet)
+    total_tweets_count = sum(len(tweets) for user, tweets in user_to_tweets.items())
 
     data = []
     for user, tweets in user_to_tweets.items():
@@ -281,6 +289,7 @@ def _log_statistics(tweets: List[Status], save_path: str):
             'user': user,
             'total_tweets_length': length_sum,
             'tweets_count': count,
+            'tweets_count_percentage': 100 * count / total_tweets_count,
             'retweets_count': retweets_count,
             'average_tweet_length': length_average,
             'last_tweeted_at': last_tweet_time,

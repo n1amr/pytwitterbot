@@ -9,10 +9,11 @@ log = logging.getLogger(__name__)
 
 
 class Authenticator:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, retry=True):
         super(Authenticator, self).__init__()
 
         self.config = config
+        self.retry = retry
 
     def get_api_client(self) -> tweepy.API:
         auth = tweepy.OAuthHandler(
@@ -31,14 +32,18 @@ class Authenticator:
             access_token['access_token_secret'],
         )
 
-        # https://docs.tweepy.org/en/v3.5.0/api.html
-        twitter = tweepy.API(
-            auth,
+        kwargs = dict(
             wait_on_rate_limit=True,
             wait_on_rate_limit_notify=True,
-            retry_count=20,
-            retry_delay=3,
         )
+        if self.retry:
+            kwargs.update(
+                retry_count=20,
+                retry_delay=3,
+            )
+
+        # https://docs.tweepy.org/en/v3.5.0/api.html
+        twitter = tweepy.API(auth, **kwargs)
         return twitter
 
     def _request_access_token(self, auth):
