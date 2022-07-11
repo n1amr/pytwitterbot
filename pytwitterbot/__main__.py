@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import time
+import tweepy
 
 from pytwitterbot.authenticator import Authenticator
 from pytwitterbot.config import Config
@@ -39,12 +40,14 @@ def main(args: argparse.Namespace):
     log.info(f'Started in directory {bot_home}')
 
     config = Config(bot_home)
-    authenticator = Authenticator(config)
+    authenticator = Authenticator(config, retry=True)
     twitter = authenticator.get_api_client()
+    screen_name = twitter.get_settings()['screen_name']
+    auth_user = twitter.get_user(screen_name=screen_name)
 
-    log.info(f'Signed in as: {twitter.me().name} (@{twitter.me().screen_name})')
+    log.info(f'Signed in as: {auth_user.name} (@{auth_user.screen_name})')
 
-    bots = create_bots(twitter, config)
+    bots = create_bots(twitter, auth_user, config)
     for bot in bots:
         try:
             bot.start()
@@ -61,17 +64,17 @@ def main(args: argparse.Namespace):
     return 0
 
 
-def create_bots(twitter, config: Config):
+def create_bots(twitter, auth_user: tweepy.User, config: Config):
     settings = config.settings
 
     bots = []
 
     if settings.get('bots.tweet.enabled', True):
-        bots.append(TweetBot(twitter, config))
+        bots.append(TweetBot(twitter, auth_user, config))
     if settings.get('bots.retweet.enabled', True):
-        bots.append(RetweetBot(twitter, config))
+        bots.append(RetweetBot(twitter, auth_user, config))
     if settings.get('bots.saver.enabled', False):
-        bots.append(SaverBot(twitter, config))
+        bots.append(SaverBot(twitter, auth_user, config))
 
     return bots
 

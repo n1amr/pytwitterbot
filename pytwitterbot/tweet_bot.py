@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 
 class TweetBot:
-    def __init__(self, twitter: tweepy.API, config: Config):
+    def __init__(self, twitter: tweepy.API, auth_user: tweepy.User, config: Config):
         super(TweetBot, self).__init__()
 
         self.twitter = twitter

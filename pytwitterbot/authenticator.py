@@ -34,7 +34,6 @@ class Authenticator:
 
         kwargs = dict(
             wait_on_rate_limit=True,
-            wait_on_rate_limit_notify=True,
         )
         if self.retry:
             kwargs.update(

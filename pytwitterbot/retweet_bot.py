@@ -2,7 +2,7 @@ import logging
 import tweepy
 
 from traceback import print_exc
-from tweepy.error import TweepError
+from tweepy.errors import TweepyException
 
 from pytwitterbot.config import Config
 
@@ -10,11 +10,11 @@ log = logging.getLogger(__name__)
 
 
 class RetweetBot:
-    def __init__(self, twitter: tweepy.API, config: Config):
+    def __init__(self, twitter: tweepy.API, auth_user: tweepy.User, config: Config):
         super(RetweetBot, self).__init__()
 
         self.twitter = twitter
-        self.bot_user_id = twitter.me().id_str
+        self.bot_user_id = auth_user.id_str
 
         self.config = config
 
@@ -31,7 +31,7 @@ class RetweetBot:
         for query in self.queries:
             log.info(f'Searching for: {query}')
             cursor = tweepy.Cursor(
-                self.twitter.search,
+                self.twitter.search_tweets,
                 q=f'{query} -filter:retweets',
                 count=self.config.tweets_count_per_search,
                 result_type='recent',
@@ -56,8 +56,8 @@ class RetweetBot:
             tweet.retweet()
             log.info('Retweeted successfully')
             self.config.mark_retweeted(tweet.id_str)
-        except TweepError as e:
-            if e.api_code == 327:
+        except TweepyException as e:
+            if 327 in e.api_codes:
                 self.config.mark_retweeted(tweet.id_str)
             else:
                 log.error(e)
@@ -67,7 +67,7 @@ class RetweetBot:
             log.error(e)
             log.exception(e)
 
-    def should_retweet(self, tweet: tweepy.Status):
+    def should_retweet(self, tweet: tweepy.Tweet):
         text = tweet.text
         user_id = tweet.user.id_str
         username = tweet.user.screen_name

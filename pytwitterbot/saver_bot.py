@@ -29,12 +29,12 @@ MAX_TWEETS_TO_FETCH = 100
 
 
 class SaverBot:
-    def __init__(self, twitter, config: Config):
+    def __init__(self, twitter: tweepy.API, auth_user: tweepy.User, config: Config):
         super(SaverBot, self).__init__()
 
         self.config = config
         self.twitter = twitter
-        self.bot_user = self.twitter.me()
+        self.bot_user = auth_user
         self.bot_user_id = self.bot_user.id_str
 
         self.marked_as_saved = self.config.marked_as_saved

@@ -1,2 +1,2 @@
 # Runtime requirements
-tweepy
+tweepy=4.10.0
