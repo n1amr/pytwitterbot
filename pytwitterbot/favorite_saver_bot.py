@@ -6,7 +6,6 @@ import requests
 import time
 import tweepy
 
-from time import sleep
 from tweepy.models import Status
 from typing import Dict, Iterable, List, Tuple
 
@@ -59,8 +58,9 @@ class FavoriteSaverBot:
 
         partitioned_new_tweets = self.partition_by_month(new_tweets)
 
-        saved_tweets = self.load_tweets()
+        saved_tweets = self.load_partition(2022, 6)
         log.info(f'Loaded {len(saved_tweets)} saved tweets.')
+        return
 
         all_tweets = new_tweets + saved_tweets
         all_tweets = _deduplicate_tweets(all_tweets)
@@ -140,22 +140,32 @@ class FavoriteSaverBot:
     def _tweets_path(self):
         return os.path.join(self.root_path, 'data', 'js', 'tweets', 'tweets.js')
 
+    def get_tweets_partition_path(self, year: int, month: int):
+        return os.path.join(self.root_path, 'data', 'js', 'tweets', f'{year:04}_{month:02}.js')
+
     @property
     def _tweets_index_path(self):
         return os.path.join(self.root_path, 'data', 'js', 'tweet_index.js')
 
-    def load_tweets(self) -> List[Status]:
+    def load_partition(self, year: int, month: int) -> List[Status]:
         tweets = []
 
-        if not os.path.exists(self._tweets_path):
-            self.store_tweets(tweets)
+        partition_path = self.get_tweets_partition_path(year, month)
 
-        content = load_text(self._tweets_path)
-        assert content.startswith(TWEETS_VAR_NAME), content[:100]
-        json_content = content[len(TWEETS_VAR_NAME):]
+        if not os.path.exists(partition_path):
+            log.warning(f'Could not load tweets from partition path: {partition_path}.')
+            breakpoint()
+            return tweets
 
-        raw_tweets = json.loads(json_content)
-        tweets = Status.parse_list(self.twitter, raw_tweets)
+        all_text_content = load_text(partition_path)
+        assert all_text_content.startswith(TWEETS_VAR_NAME), all_text_content[:100]
+
+        text_json_content = all_text_content[len(TWEETS_VAR_NAME):]
+
+        data = json.loads(text_json_content)
+
+        tweets = Status.parse_list(self.twitter, data)
+
         return tweets
 
     def store_tweets(self, tweets: List[Status]):
@@ -218,7 +228,7 @@ class FavoriteSaverBot:
 
     def download_media_url(self, media_url: str) -> str:
         relpath = re.sub(r'^https?://', '', media_url)
-        output_path = os.path.join(self.root_path, relpath)
+        output_path = os.path.join(self.root_path, 'media', relpath)  # TODO; Adjust path.
 
         if os.path.isfile(output_path):
             return media_url
