@@ -174,7 +174,7 @@ class FavoriteSaverBot:
                 value = json_data[key]
 
                 if key == 'variants':
-                    self.visit_variants(value)
+                    self.visit_best_variants(value)
                     continue
 
                 if isinstance(value, str):
@@ -195,7 +195,7 @@ class FavoriteSaverBot:
                 else:
                     self.visit_media_urls(value)
 
-    def visit_variants(self, variants: list):
+    def visit_best_variants(self, variants: list):
         assert len(variants) > 0
 
         default_variant = variants[0]
