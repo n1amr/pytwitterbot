@@ -134,12 +134,11 @@ class FavoriteSaverBot:
 
         partition_path = self.get_tweets_partition_path(year, month)
 
-        log.info(f'Loading tweets partition for {year:04}/{month:02} from: {partition_path}.')
-
         if not os.path.exists(partition_path):
             log.warning(f'Could not load tweets from partition path: {partition_path}.')
-            breakpoint()
             return tweets
+
+        log.info(f'Loading tweets partition for {year:04}/{month:02} from: {partition_path}.')
 
         expected_header = _partition_header(year, month)
 
@@ -155,41 +154,6 @@ class FavoriteSaverBot:
         log.info(f'Loaded {len(tweets)} tweets partition for {year:04}/{month:02}.')
 
         return tweets
-
-    def store_tweets(self, tweets: List[Status], year: int, month: int):
-        partition_path = self.get_tweets_partition_path(year, month)
-
-        json_tweets = [tweet._json for tweet in tweets]
-
-        write_json_with_header(json_tweets, partition_path, header=_partition_header(year, month))
-        write_json(json_tweets, f'{partition_path}.gitignored.json')  # TODO: Remove
-
-        new_partition_metadata = {
-            'tweet_count': len(tweets),
-            'month': month,
-            'year': year,
-            'file_name': f'data/js/tweets/{year:04}_{month:02}.js',
-            'var_name': f'tweets_{year:04}_{month:02}',
-        }
-
-        index_path = self.get_tweets_index_path()
-        if os.path.isfile(index_path):
-            partitions_metadata = load_json_with_header(index_path, header=TWEETS_INDEX_HEADER)
-        else:
-            partitions_metadata = []
-
-        key_to_metadata = {}
-        for metadata in partitions_metadata + [new_partition_metadata]:
-            key = (metadata['year'], metadata['month'])
-            key_to_metadata[key] = metadata
-
-        partitions_metadata = [
-            kv[1]
-            for kv in sorted(key_to_metadata.items(), key=lambda kv: kv[0])
-        ]
-
-        write_json_with_header(partitions_metadata, index_path, header=TWEETS_INDEX_HEADER)
-        write_json(partitions_metadata, f'{index_path}.gitignored.json')  # TODO: Remove.
 
     def download_media_and_adjust_urls(self, tweets: List[Status]) -> List[Status]:
         new_tweets = []
@@ -285,6 +249,41 @@ class FavoriteSaverBot:
                 self.config.mark_saved(tweet.id)
 
         self.config.commit_saved_marks()
+
+    def store_tweets(self, tweets: List[Status], year: int, month: int):
+        partition_path = self.get_tweets_partition_path(year, month)
+
+        json_tweets = [tweet._json for tweet in tweets]
+
+        write_json_with_header(json_tweets, partition_path, header=_partition_header(year, month))
+        write_json(json_tweets, f'{partition_path}.gitignored.json')  # TODO: Remove
+
+        new_partition_metadata = {
+            'tweet_count': len(tweets),
+            'month': month,
+            'year': year,
+            'file_name': f'data/js/tweets/{year:04}_{month:02}.js',
+            'var_name': f'tweets_{year:04}_{month:02}',
+        }
+
+        index_path = self.get_tweets_index_path()
+        if os.path.isfile(index_path):
+            partitions_metadata = load_json_with_header(index_path, header=TWEETS_INDEX_HEADER)
+        else:
+            partitions_metadata = []
+
+        key_to_metadata = {}
+        for metadata in partitions_metadata + [new_partition_metadata]:
+            key = (metadata['year'], metadata['month'])
+            key_to_metadata[key] = metadata
+
+        partitions_metadata = [
+            kv[1]
+            for kv in sorted(key_to_metadata.items(), key=lambda kv: kv[0])
+        ]
+
+        write_json_with_header(partitions_metadata, index_path, header=TWEETS_INDEX_HEADER)
+        write_json(partitions_metadata, f'{index_path}.gitignored.json')  # TODO: Remove.
 
 
 def _write(data: bytearray, path: str):
