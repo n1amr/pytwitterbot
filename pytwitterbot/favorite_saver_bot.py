@@ -123,16 +123,8 @@ class FavoriteSaverBot:
 
         return tweets
 
-    @property
-    def _tweets_path(self):
-        return os.path.join(self.root_path, 'data', 'js', 'tweets', 'tweets.js')
-
     def get_tweets_partition_path(self, year: int, month: int):
         return os.path.join(self.root_path, 'data', 'js', 'tweets', f'{year:04}_{month:02}.js')
-
-    @property
-    def _tweets_index_path(self):
-        return os.path.join(self.root_path, 'data', 'js', 'tweet_index.js')
 
     def get_tweets_index_path(self):
         return os.path.join(self.root_path, 'data', 'js', 'tweet_index.js')
