@@ -1,3 +1,5 @@
+from glob import iglob
+from hashlib import md5
 import json
 import logging
 import os
@@ -45,8 +47,7 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
     def start(self):
-
-
+        fill_md5sum_cache(self.root_path)
 
         for year, month in sorted(existing_partition_keys, reverse=True):
             key = (year, month)
@@ -254,22 +255,25 @@ class FavoriteSaverBot:
         if media_url.startswith('http'):
             return media_url
 
-        if '?' in media_url:
-            assert 'legacy' in media_url
+        if 'legacy/original' not in media_url:
+            return media_url
 
-            local_relpath = media_url
-            local_relpath = re.sub(r'\?tag=\d+', '', local_relpath)
-            local_path = os.path.join(self.root_path, local_relpath)
+        original_relpath = media_url
+        original_path = os.path.join(self.root_path, original_relpath)
+        original_hash = calculate_file_hash(original_path)
+        original_filename = os.path.basename(original_path)
 
-            if os.path.isfile(local_path):
-                return local_relpath
-            else:
-                log.warning(f'Cannot find original path of {media_url}.')
+        if original_hash in md5sum_cache:
+            retrospective_relpath = md5sum_cache[original_hash]
+            retrospective_filename = os.path.basename(retrospective_relpath)
+
+            if original_filename == retrospective_filename:
+                return retrospective_relpath
                 breakpoint()
-                return media_url
+                exit(0)
 
-            breakpoint()
-            exit(0)
+        # breakpoint()
+        return media_url
 
         if not media_url.startswith('http'):
             return media_url
@@ -569,4 +573,24 @@ existing_partition_keys = [
 #     (2014, 11),
 # ]
 
-md5sum_cache = {}
+md5sum_cache: Dict[str, List[str]] = {}
+
+
+def fill_md5sum_cache(root_path):
+    for path in iglob(root_path + '/data/media/legacy/retrospective/**', recursive=True):
+        if os.path.isdir(path):
+            continue
+        relpath = os.path.relpath(path, root_path)
+        hash = calculate_file_hash(path)
+        md5sum_cache[hash] = os.path.relpath(path, root_path)
+        # print(md5sum_cache)
+        # exit(0)
+
+
+def calculate_file_hash(path):
+    with open(path, 'rb') as f:
+        bytes = f.read()
+        assert not len(f.read())
+
+    hash = md5(bytes).hexdigest()
+    return hash
