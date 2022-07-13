@@ -249,11 +249,12 @@ class FavoriteSaverBot:
             for key in list(variant.keys()):
                 value = variant[key]
                 if 'url' in key and not key.startswith('__backup__'):
-                    adjusted_url = self.download_media_url(value)
                     backup_key = f'__backup__{key}'
-                    variant[key] = adjusted_url
                     if value.startswith('http'):
                         variant[backup_key] = value
+
+                    adjusted_url = self.download_media_url(value)
+                    variant[key] = adjusted_url
 
     def download_media_url(self, media_url: str) -> str:
         if not media_url.startswith('http'):
