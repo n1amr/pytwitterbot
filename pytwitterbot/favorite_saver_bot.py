@@ -20,7 +20,6 @@ from pytwitterbot.file_utils import (
 
 log = logging.getLogger(__name__)
 
-TWEETS_VAR_NAME = 'Grailbird.data.tweets = '
 TWEETS_INDEX_VAR_NAME = 'var tweet_index = '
 
 MAX_TWEETS_TO_FETCH = 100
@@ -57,6 +56,8 @@ class FavoriteSaverBot:
         new_tweets = self.download_media_and_adjust_urls(new_tweets)
 
         partitioned_new_tweets = self.partition_by_month(new_tweets)
+
+        self.merge_new_tweets(partitioned_new_tweets)
 
         saved_tweets = self.load_partition(2022, 6)
         log.info(f'Loaded {len(saved_tweets)} saved tweets.')
@@ -152,19 +153,25 @@ class FavoriteSaverBot:
 
         partition_path = self.get_tweets_partition_path(year, month)
 
+        log.info(f'Loading tweets partition for {year:04}/{month:02} from: {partition_path}.')
+
         if not os.path.exists(partition_path):
             log.warning(f'Could not load tweets from partition path: {partition_path}.')
             breakpoint()
             return tweets
 
-        all_text_content = load_text(partition_path)
-        assert all_text_content.startswith(TWEETS_VAR_NAME), all_text_content[:100]
+        expected_header = _partition_header(year, month)
 
-        text_json_content = all_text_content[len(TWEETS_VAR_NAME):]
+        all_text_content = load_text(partition_path)
+        assert all_text_content.startswith(expected_header), all_text_content[:len(expected_header) * 2]
+
+        text_json_content = all_text_content[len(expected_header):]
 
         data = json.loads(text_json_content)
 
         tweets = Status.parse_list(self.twitter, data)
+
+        log.info(f'Loaded {len(tweets)} tweets partition for {year:04}/{month:02}.')
 
         return tweets
 
@@ -263,9 +270,14 @@ class FavoriteSaverBot:
         for tweet in tweets:
             dt = tweet.created_at
             key = (dt.year, dt.month)
+            if key == (2022, 7):
+                key = (2022, 6)  # TODO: Remove this.
             partitioned_tweets.setdefault(key, []).append(tweet)
 
         return partitioned_tweets
+
+    def merge_new_tweets(self, partitioned_new_tweets: Dict[Tuple[int, int], List[Status]]):
+        pass
 
 
 def _write(data: bytearray, path: str):
@@ -293,3 +305,7 @@ def _deduplicate_tweets(tweets):
             result.append(tweet)
             stored_ids.add(id)
     return result
+
+
+def _partition_header(year: int, month: int) -> str:
+    return f'Grailbird.data.tweets_{year:04}_{month:02} = '
