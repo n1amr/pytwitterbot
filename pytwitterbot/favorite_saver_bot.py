@@ -24,9 +24,11 @@ log = logging.getLogger(__name__)
 TWEETS_INDEX_HEADER = 'var tweet_index = '
 
 MAX_TWEETS_TO_FETCH = 100
+MAX_TWEETS_TO_FETCH = 10  # TODO
 
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
+TWEET_COUNT_PER_FETCH = 5
 
 
 class FavoriteSaverBot:
@@ -56,17 +58,15 @@ class FavoriteSaverBot:
         self.merge_new_tweets(partitioned_new_tweets)
 
     def fetch_new_tweets(self) -> List[Status]:
-        tweet_count_per_fetch = 5
-        use_cursor = False  # TODO
+        use_cursor = True
         if use_cursor:
             tweets_iterable = tweepy.Cursor(
                 self.twitter.get_favorites,
-                count=tweet_count_per_fetch,
+                count=TWEET_COUNT_PER_FETCH,
                 include_entities=True,
             ).items()
         else:
-            tweets_iterable = self.twitter.get_favorites(count=tweet_count_per_fetch)
-            tweets_iterable = iter(tweets_iterable)
+            tweets_iterable = iter(self.twitter.get_favorites(count=TWEET_COUNT_PER_FETCH))
 
         found_saved = 0
 
@@ -110,7 +110,7 @@ class FavoriteSaverBot:
                 log.info(f'Found new tweet. {_summarize_tweet(tweet)}.')
                 new_tweets.append(tweet)
                 if found_saved != 0:
-                    log.Warning(f'Found a new tweet {id} tweet after {found_saved} saved tweets.')
+                    log.warning(f'Found a new tweet {id} tweet after {found_saved} saved tweets.')
 
         return new_tweets
 
