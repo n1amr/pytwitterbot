@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from statistics import median_grouped
 import requests
 import time
 import tqdm
@@ -177,6 +178,7 @@ class FavoriteSaverBot:
         return new_tweets
 
     def visit_media_urls(self, json_data):
+        # TODO: Enable.
         keys_to_extract = [
             'profile_image_url',
             'profile_image_url_https',
@@ -246,8 +248,21 @@ class FavoriteSaverBot:
                     variant[backup_key] = value
 
     def download_media_url(self, media_url: str) -> str:
-        if not media_url.startswith('http'):
+        if media_url.startswith('http'):
             return media_url
+
+        if media_url.startswith('media/') or media_url.startswith('profile_images/'):
+            local_relpath = f'data/media/legacy/original/{media_url}'
+            local_path = os.path.join(self.root_path, local_relpath)
+
+            if os.path.isfile(local_path):
+                return local_relpath
+            else:
+                log.warning(f'Cannot find original path of {media_url}.')
+                return media_url
+
+        breakpoint()
+        # exit(0)
 
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
