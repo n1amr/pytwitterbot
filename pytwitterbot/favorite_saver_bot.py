@@ -261,16 +261,16 @@ class FavoriteSaverBot:
         original_relpath = media_url
         original_path = os.path.join(self.root_path, original_relpath)
         original_hash = calculate_file_hash(original_path)
-        original_filename = os.path.basename(original_path)
 
         if original_hash in md5sum_cache:
             retrospective_relpath = md5sum_cache[original_hash]
-            retrospective_filename = os.path.basename(retrospective_relpath)
+            retrospective_path = os.path.join(self.root_path, retrospective_relpath)
 
-            if original_filename == retrospective_filename:
+            if is_identical_file(original_path, retrospective_path):
                 return retrospective_relpath
+            else:
+                log.warning('Hash collision.')
                 breakpoint()
-                exit(0)
 
         # breakpoint()
         return media_url
@@ -594,3 +594,15 @@ def calculate_file_hash(path):
 
     hash = md5(bytes).hexdigest()
     return hash
+
+
+def is_identical_file(path, reference_path):
+    with open(path, 'rb') as f:
+        bytes = f.read()
+        assert not len(f.read())
+
+    with open(reference_path, 'rb') as f:
+        reference_bytes = f.read()
+        assert not len(f.read())
+
+    return bytes == reference_bytes
