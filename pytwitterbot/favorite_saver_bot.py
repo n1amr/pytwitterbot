@@ -45,6 +45,9 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
     def start(self):
+
+
+
         for year, month in sorted(existing_partition_keys, reverse=True):
             key = (year, month)
 
@@ -210,7 +213,7 @@ class FavoriteSaverBot:
                     if should_download:
                         media_url = value
                         backup_key = f'__backup__{key}'
-                        json_data[backup_key] = media_url
+                        # json_data[backup_key] = media_url # TODO
 
                         local_url = self.download_media_url(media_url)
                         json_data[key] = local_url
@@ -245,24 +248,31 @@ class FavoriteSaverBot:
                     adjusted_url = self.download_media_url(value)
                     backup_key = f'__backup__{key}'
                     variant[key] = adjusted_url
-                    variant[backup_key] = value
+                    # variant[backup_key] = value # TODO
 
     def download_media_url(self, media_url: str) -> str:
         if media_url.startswith('http'):
             return media_url
 
-        if media_url.startswith('media/') or media_url.startswith('profile_images/'):
-            local_relpath = f'data/media/legacy/original/{media_url}'
+        if '?' in media_url:
+            assert 'legacy' in media_url
+
+            local_relpath = media_url
+            local_relpath = re.sub(r'\?tag=\d+', '', local_relpath)
             local_path = os.path.join(self.root_path, local_relpath)
 
             if os.path.isfile(local_path):
                 return local_relpath
             else:
                 log.warning(f'Cannot find original path of {media_url}.')
+                breakpoint()
                 return media_url
 
-        breakpoint()
-        # exit(0)
+            breakpoint()
+            exit(0)
+
+        if not media_url.startswith('http'):
+            return media_url
 
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
@@ -558,3 +568,5 @@ existing_partition_keys = [
 # existing_partition_keys = [
 #     (2014, 11),
 # ]
+
+md5sum_cache = {}
