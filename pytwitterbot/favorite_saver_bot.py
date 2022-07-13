@@ -46,7 +46,7 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
     def start(self):
-        for year, month in existing_partition_keys:
+        for year, month in sorted(existing_partition_keys, reverse=True):
             key = (year, month)
 
             log.info(f'Downloading media for partition {key}.')
