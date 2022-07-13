@@ -94,16 +94,10 @@ class FavoriteSaverBot:
                         raise
 
             if tweet is None:
-                log.error(f'Failed to fetch next tweet. Tweet is None.')
+                log.debug(f'Failed to fetch next tweet. Tweet is None.')
                 break
 
-            log.info(
-                f'Fetched tweet.' +
-                f' id: {tweet.id_str}' +
-                f' created_at: {tweet.created_at}' +
-                f' user: {tweet.user.screen_name}' +
-                f' text: {tweet.text}'
-            )
+            log.debug(f'Fetched tweet. {_summarize_tweet(tweet)}')
             tweets.append(tweet)
 
             id = tweet.id_str
@@ -113,7 +107,7 @@ class FavoriteSaverBot:
                 if found_saved >= 20:
                     break
             else:
-                log.debug(f'Keeping tweet. Id: {id}.')
+                log.info(f'Found new tweet. {_summarize_tweet(tweet)}.')
                 if found_saved != 0:
                     log.Warning(f'Found a new tweet {id} tweet after {found_saved} saved tweets.')
 
@@ -327,3 +321,14 @@ def write_json_with_header(data, path, header, *, indent=2):
     content = f'{header}{json_text}'
 
     write_text(content, path)
+
+
+def _summarize_tweet(tweet: Status) -> str:
+    escaped_text = tweet.text.replace("\n", "<NL>")
+
+    return (
+        f'Id: {tweet.id_str}' +
+        f'. Created_at: {tweet.created_at}' +
+        f'. User: {tweet.user.screen_name}' +
+        f'. Text: {escaped_text}'
+    )
