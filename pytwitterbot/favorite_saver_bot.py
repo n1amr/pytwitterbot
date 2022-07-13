@@ -100,7 +100,7 @@ class FavoriteSaverBot:
             fetched_tweets.append(tweet)
 
             id = tweet.id_str
-            if id in self.marked_as_saved:
+            if id in self.marked_as_saved and False:  # TODO
                 found_saved += 1
                 log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
                 if found_saved >= 20:
@@ -168,7 +168,9 @@ class FavoriteSaverBot:
                 self.visit_media_urls(item)
 
         elif isinstance(json_data, dict):
-            for key, value in json_data.items():
+            keys = list(json_data.keys())
+            for key in keys:
+                value = json_data[key]
                 if isinstance(value, str):
                     should_download = (
                         key in keys_to_extract
@@ -181,7 +183,7 @@ class FavoriteSaverBot:
                         adjusted_url = self.download_media_url(value)
                         backup_key = f'__backup__{key}'
                         json_data[key] = adjusted_url
-                        # json_data[backup_key] = value # TODO
+                        json_data[backup_key] = value  # TODO
                 else:
                     self.visit_media_urls(value)
 
