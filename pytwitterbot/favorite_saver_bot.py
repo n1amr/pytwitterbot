@@ -212,7 +212,7 @@ class FavoriteSaverBot:
                             'pbs.twimg' in value
                             or 'video.twimg.com' in value and '.mp4' in value
                         )
-                    )
+                    ) and not key.startswith('__backup__')
                     if should_download:
                         media_url = value
                         backup_key = f'__backup__{key}'
@@ -248,7 +248,7 @@ class FavoriteSaverBot:
 
             for key in list(variant.keys()):
                 value = variant[key]
-                if 'url' in key:
+                if 'url' in key and not key.startswith('__backup__'):
                     adjusted_url = self.download_media_url(value)
                     backup_key = f'__backup__{key}'
                     variant[key] = adjusted_url
@@ -271,8 +271,7 @@ class FavoriteSaverBot:
             return local_relpath
 
         # http_media_url = f'http://{relpath}'
-        log.info(f'Downloading {media_url} to {local_path}.')
-
+        log.debug(f'Downloading {media_url} to {local_path}.')  # TODO; INFO
         response = None
 
         for trial in range(RETRY_COUNT):
