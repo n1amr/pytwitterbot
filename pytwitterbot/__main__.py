@@ -9,6 +9,7 @@ import tweepy
 
 from pytwitterbot.authenticator import Authenticator
 from pytwitterbot.config import Config
+from pytwitterbot.favorite_saver_bot import FavoriteSaverBot
 from pytwitterbot.retweet_bot import RetweetBot
 from pytwitterbot.saver_bot import SaverBot
 from pytwitterbot.tweet_bot import TweetBot
@@ -75,6 +76,8 @@ def create_bots(twitter, auth_user: tweepy.User, config: Config):
         bots.append(RetweetBot(twitter, auth_user, config))
     if settings.get('bots.saver.enabled', False):
         bots.append(SaverBot(twitter, auth_user, config))
+    if settings.get('bots.favorite_saver.enabled', False):
+        bots.append(FavoriteSaverBot(twitter, auth_user, config))
 
     return bots
 
