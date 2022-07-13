@@ -1,3 +1,8 @@
 TODO
 
 [2022-07-13 22:07:08.858] WARNING: Cannot find original path of media/B2jXx2qCMAABVmK.jpg.
+[2022-07-13 22:11:50.243] WARNING: Cannot find original path of media/videos/thumbnails/yw-NhvN-zd4XiENk.mp4?tag=2.jpg.
+[2022-07-13 22:11:50.889] WARNING: Cannot find original path of media/CFDuGKcWEAArAG0.jpg.
+[2022-07-13 22:11:51.416] WARNING: Cannot find original path of profile_images/46tYDcJm_normal.jpeg.
+[2022-07-13 22:11:54.642] WARNING: Cannot find original path of media/Ak-CReuCIAEYDhJ.jpg.
+
