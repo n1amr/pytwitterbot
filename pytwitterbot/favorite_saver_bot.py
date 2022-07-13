@@ -181,14 +181,16 @@ class FavoriteSaverBot:
                     self.visit_media_urls(value)
 
     def download_media_url(self, media_url: str) -> str:
-        relpath = re.sub(r'^https?://', '', media_url)
-        output_path = os.path.join(self.root_path, 'media', relpath)  # TODO; Adjust path.
+        local_relpath = re.sub(r'^https?://', '', media_url)
+        local_relpath = f'media/{local_relpath}'
 
-        if os.path.isfile(output_path):
-            return media_url
+        local_path = os.path.join(self.root_path, local_relpath)  # TODO; Adjust path.
+
+        if os.path.isfile(local_path):
+            return local_relpath
 
         # http_media_url = f'http://{relpath}'
-        log.info(f'Downloading {media_url} to {output_path}.')
+        log.info(f'Downloading {media_url} to {local_path}.')
 
         for trial in range(RETRY_COUNT):
             try:
@@ -197,7 +199,7 @@ class FavoriteSaverBot:
                 response.raise_for_status()
                 data = response.content
 
-                _write(data, output_path)
+                _write(data, local_path)
                 break
             except Exception as e:
                 log.exception(e)
@@ -208,8 +210,7 @@ class FavoriteSaverBot:
                     log.exception(e)
                     return media_url
 
-        # return media_url
-        return relpath
+        return local_relpath
 
     def partition_by_month(self, tweets: Iterable[Status]) -> Dict[Tuple[int, int], List[Status]]:
         partitioned_tweets = {}
