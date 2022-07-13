@@ -227,7 +227,7 @@ class FavoriteSaverBot:
             return media_url
 
         # http_media_url = f'http://{relpath}'
-        log.info(f'Downloading {media_url} to {output_path}')
+        log.info(f'Downloading {media_url} to {output_path}.')
 
         for trial in range(RETRY_COUNT):
             try:
@@ -247,7 +247,8 @@ class FavoriteSaverBot:
                     log.exception(e)
                     return media_url
 
-        return media_url
+        # return media_url
+        return relpath
 
 
 def _write(data: bytearray, path: str):
