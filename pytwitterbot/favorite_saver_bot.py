@@ -40,11 +40,6 @@ class FavoriteSaverBot:
 
         self.settings = self.config.settings['bots.favorite_saver.config']
         self.root_path = self.settings['root_path']
-        self.list_name = 'ALL'  # TODO
-        self.list = self.twitter.get_list(
-            owner_screen_name=self.bot_user.screen_name,
-            slug=self.list_name,
-        )
 
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
@@ -74,7 +69,7 @@ class FavoriteSaverBot:
             tweets_iterable = iter(tweets_iterable)
 
         max_count = self.max_tweets_to_fetch
-        found_saved = None
+        found_saved = 0
 
         tweets = []
         while len(tweets) < max_count:
@@ -104,7 +99,7 @@ class FavoriteSaverBot:
 
             log.info(
                 f'Fetched tweet.' +
-                f' id: {tweet.id}' +
+                f' id: {tweet.id_str}' +
                 f' created_at: {tweet.created_at}' +
                 f' user: {tweet.user.screen_name}' +
                 f' text: {tweet.text}'
@@ -113,13 +108,14 @@ class FavoriteSaverBot:
 
             id = tweet.id_str
             if id in self.marked_as_saved:
-                log.debug(f'Found a saved tweet. Id: {id}.')
-                found_saved = id
-                break  # TODO: Uncomment after verifying.
+                found_saved += 1
+                log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
+                if found_saved >= 20:
+                    break
             else:
                 log.debug(f'Keeping tweet. Id: {id}.')
-                if found_saved is not None:
-                    log.error(f'Found a new tweet {id} tweet after a saved tweet {found_saved}.')
+                if found_saved != 0:
+                    log.Warning(f'Found a new tweet {id} tweet after {found_saved} saved tweets.')
 
         return tweets
 
@@ -227,26 +223,22 @@ class FavoriteSaverBot:
         for tweet in tweets:
             dt = tweet.created_at
             key = (dt.year, dt.month)
-            if key == (2022, 7):
-                key = (2022, 6)  # TODO: Remove this.
             partitioned_tweets.setdefault(key, []).append(tweet)
 
         return partitioned_tweets
 
     def merge_new_tweets(self, partitioned_new_tweets: Dict[Tuple[int, int], List[Status]]):
         for (year, month), new_tweets in partitioned_new_tweets.items():
-            saved_tweets = self.load_partition(year, month)
-            log.info(f'Loaded {len(saved_tweets)} saved tweets.')
+            partition_tweets = self.load_partition(year, month)
 
-            all_tweets = new_tweets + saved_tweets
-            all_tweets = _deduplicate_tweets(all_tweets)
-            all_tweets = _sort_tweets(all_tweets)
+            new_partition_tweets = new_tweets + partition_tweets
+            new_partition_tweets = _deduplicate_tweets(new_partition_tweets)
+            new_partition_tweets = _sort_tweets(new_partition_tweets)
 
-            self.store_tweets(all_tweets, year, month)
-            log.info(f'Saved {len(all_tweets)} tweets for partition {year:04}/{month:02}.')
+            self.store_tweets(new_partition_tweets, year, month)
 
-            for tweet in all_tweets:
-                self.config.mark_saved(tweet.id)
+            for tweet in new_partition_tweets:
+                self.config.mark_saved(tweet.id_str)
 
         self.config.commit_saved_marks()
 
@@ -285,6 +277,8 @@ class FavoriteSaverBot:
         write_json_with_header(partitions_metadata, index_path, header=TWEETS_INDEX_HEADER)
         write_json(partitions_metadata, f'{index_path}.gitignored.json')  # TODO: Remove.
 
+        log.info(f'Saved {len(tweets)} tweets for partition {year:04}/{month:02}.')
+
 
 def _write(data: bytearray, path: str):
     ensure_parent_dir(path)
@@ -297,6 +291,7 @@ def _sort_tweets(tweets):
         return (
             tweet.created_at,
             tweet.id,
+            tweet.id_str,
         )
 
     return list(sorted(tweets, key=_tweet_sort_key, reverse=True))
@@ -306,7 +301,7 @@ def _deduplicate_tweets(tweets):
     stored_ids = set()
     result = []
     for tweet in tweets:
-        id = tweet.id
+        id = tweet.id_str
         if id not in stored_ids:
             result.append(tweet)
             stored_ids.add(id)
