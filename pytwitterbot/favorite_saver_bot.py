@@ -172,16 +172,22 @@ class FavoriteSaverBot:
                 if isinstance(value, str):
                     should_download = (
                         key in keys_to_extract
-                        or key == 'url' and 'pbs.twimg' in value
+                        or key == 'url' and (
+                            'pbs.twimg' in value
+                            or 'video.twimg.com' in value and '.mp4' in value
+                        )
                     )
                     if should_download:
                         adjusted_url = self.download_media_url(value)
+                        backup_key = f'__backup__{key}'
                         json_data[key] = adjusted_url
+                        # json_data[backup_key] = value # TODO
                 else:
                     self.visit_media_urls(value)
 
     def download_media_url(self, media_url: str) -> str:
         local_relpath = re.sub(r'^https?://', '', media_url)
+        local_relpath = re.sub(r'\?.*$', '', local_relpath)
         local_relpath = f'media/{local_relpath}'
 
         local_path = os.path.join(self.root_path, local_relpath)
