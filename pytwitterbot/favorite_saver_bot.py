@@ -1,11 +1,10 @@
-from curses import meta
 import json
 import logging
 import os
 import re
 import requests
 import time
-from soupsieve import select
+import tqdm
 import tweepy
 
 from tweepy.models import Status
@@ -15,7 +14,6 @@ from pytwitterbot.config import Config
 from pytwitterbot.file_utils import (
     ensure_parent_dir,
     load_text,
-    write_json,
     write_text,
 )
 
@@ -52,7 +50,8 @@ class FavoriteSaverBot:
             log.info(f'Downloading media for partition {key}.')
 
             partition_tweets = self.load_partition(year, month)
-            self.download_media_and_adjust_urls(partition_tweets)
+            adjusted_partition_tweets = self.download_media_and_adjust_urls(partition_tweets)
+            partition_tweets = adjusted_partition_tweets
 
             partitioned_new_tweets = {key: partition_tweets}
 
@@ -169,7 +168,7 @@ class FavoriteSaverBot:
 
     def download_media_and_adjust_urls(self, tweets: List[Status]) -> List[Status]:
         new_tweets = []
-        for tweet in tweets:
+        for tweet in tqdm.tqdm(tweets, desc='Downloading media.'):
             tweet_json = json.loads(json.dumps(tweet._json))
             self.visit_media_urls(tweet_json)
             new_tweet = Status.parse(self.twitter, tweet_json)
@@ -252,6 +251,8 @@ class FavoriteSaverBot:
 
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
+        # local_relpath = f'data/media/tweepy/{local_relpath}'
+        # local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
         local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
 
         local_path = os.path.join(self.root_path, local_relpath)
@@ -537,4 +538,8 @@ existing_partition_keys = [
     (2022, 4),
     (2022, 5),
     (2022, 6),
+]
+
+existing_partition_keys = [
+    (2014, 11),
 ]
