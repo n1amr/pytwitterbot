@@ -198,7 +198,7 @@ class FavoriteSaverBot:
     def visit_best_variants(self, variants: list):
         assert len(variants) > 0
 
-        default_variant = variants[0]
+        # Select best variant.
         best_variant = None
         best_bitrate = -1
         for variant in variants:
@@ -210,13 +210,12 @@ class FavoriteSaverBot:
                 best_variant = variant
                 best_bitrate = bitrate
 
-        selected_variant = best_variant or default_variant
+        selected_variant = best_variant or variants[0]
 
+        # Adjust best variant.
         for variant in variants:
             if variant != selected_variant:
                 continue
-
-            print(variant)
 
             for key in list(variant.keys()):
                 value = variant[key]
@@ -225,8 +224,6 @@ class FavoriteSaverBot:
                     backup_key = f'__backup__{key}'
                     variant[key] = adjusted_url
                     variant[backup_key] = value
-
-        breakpoint()
 
     def download_media_url(self, media_url: str) -> str:
         local_relpath = re.sub(r'^https?://', '', media_url)
@@ -292,7 +289,7 @@ class FavoriteSaverBot:
         json_tweets = [tweet._json for tweet in tweets]
 
         write_json_with_header(json_tweets, partition_path, header=_partition_header(year, month))
-        write_json(json_tweets, f'{partition_path}.gitignored.json')  # TODO: Remove
+        # write_json(json_tweets, f'{partition_path}.gitignored.json')
 
         new_partition_metadata = {
             'tweet_count': len(tweets),
@@ -319,7 +316,7 @@ class FavoriteSaverBot:
         ]
 
         write_json_with_header(partitions_metadata, index_path, header=TWEETS_INDEX_HEADER)
-        write_json(partitions_metadata, f'{index_path}.gitignored.json')  # TODO: Remove.
+        # write_json(partitions_metadata, f'{index_path}.gitignored.json')
 
         log.info(f'Saved {len(tweets)} tweets for partition {year:04}/{month:02}.')
 
