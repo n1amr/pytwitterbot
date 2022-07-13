@@ -5,6 +5,7 @@ import os
 import re
 import requests
 import time
+from soupsieve import select
 import tweepy
 
 from tweepy.models import Status
@@ -171,6 +172,11 @@ class FavoriteSaverBot:
             keys = list(json_data.keys())
             for key in keys:
                 value = json_data[key]
+
+                if key == 'variants':
+                    self.visit_variants(value)
+                    continue
+
                 if isinstance(value, str):
                     should_download = (
                         key in keys_to_extract
@@ -180,12 +186,47 @@ class FavoriteSaverBot:
                         )
                     )
                     if should_download:
-                        adjusted_url = self.download_media_url(value)
+                        media_url = value
                         backup_key = f'__backup__{key}'
-                        json_data[key] = adjusted_url
-                        json_data[backup_key] = value  # TODO
+                        json_data[backup_key] = media_url
+
+                        local_url = self.download_media_url(media_url)
+                        json_data[key] = local_url
                 else:
                     self.visit_media_urls(value)
+
+    def visit_variants(self, variants: list):
+        assert len(variants) > 0
+
+        default_variant = variants[0]
+        best_variant = None
+        best_bitrate = -1
+        for variant in variants:
+            url = variant['url']
+            if '.mp4' not in url:
+                continue
+            bitrate = variant.get('bitrate', 0)
+            if bitrate > best_bitrate:
+                best_variant = variant
+                best_bitrate = bitrate
+
+        selected_variant = best_variant or default_variant
+
+        for variant in variants:
+            if variant != selected_variant:
+                continue
+
+            print(variant)
+
+            for key in list(variant.keys()):
+                value = variant[key]
+                if 'url' in key:
+                    adjusted_url = self.download_media_url(value)
+                    backup_key = f'__backup__{key}'
+                    variant[key] = adjusted_url
+                    variant[backup_key] = value
+
+        breakpoint()
 
     def download_media_url(self, media_url: str) -> str:
         local_relpath = re.sub(r'^https?://', '', media_url)
