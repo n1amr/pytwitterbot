@@ -1,16 +1,16 @@
-import datetime
 import json
 import logging
 import os
 import re
 import requests
+import time
 import tweepy
 
-from pytwitterbot.config import Config
 from time import sleep
 from tweepy.models import Status
 from typing import List
 
+from pytwitterbot.config import Config
 from pytwitterbot.file_utils import (
     ensure_parent_dir,
     load_text,
@@ -24,8 +24,10 @@ log = logging.getLogger(__name__)
 TWEETS_VAR_NAME = 'Grailbird.data.tweets = '
 TWEETS_INDEX_VAR_NAME = 'var tweet_index = '
 
-MAX_SAVED_TWEETS = 100_000
 MAX_TWEETS_TO_FETCH = 100
+
+RETRY_COUNT = 20
+RETRY_DELAY_SECONDS = 5
 
 
 class FavoriteSaverBot:
@@ -45,10 +47,7 @@ class FavoriteSaverBot:
             slug=self.list_name,
         )
 
-        self.max_saved_tweets = self.settings.get('max_saved_tweets', MAX_SAVED_TWEETS)
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
-
-        breakpoint()
 
     def start(self):
         log.info(f'Fetching tweets')
@@ -64,7 +63,6 @@ class FavoriteSaverBot:
         all_tweets = new_tweets + saved_tweets
         all_tweets = _deduplicate_tweets(all_tweets)
         all_tweets = _sort_tweets(all_tweets)
-        all_tweets = all_tweets[:self.max_saved_tweets]
         self.store_tweets(all_tweets)
         log.info(f'Saved {len(all_tweets)} tweets.')
 
@@ -73,22 +71,30 @@ class FavoriteSaverBot:
         self.config.commit_saved_marks()
 
     def fetch_tweets(self) -> List[Status]:
-        timeline = tweepy.Cursor(
-            self.twitter.list_timeline,
-            list_id=self.list.id,
-            count=20,
-            include_entities=True,
-        ).items()
+        tweet_count_per_fetch = 5
+        use_cursor = False  # TODO
+        if use_cursor:
+            tweets_iterable = tweepy.Cursor(
+                self.twitter.get_favorites,
+                count=tweet_count_per_fetch,
+                include_entities=True,
+            ).items()
+        else:
+            tweets_iterable = self.twitter.get_favorites(count=tweet_count_per_fetch)
+            tweets_iterable = iter(tweets_iterable)
 
-        max_count = min(self.max_saved_tweets, self.max_tweets_to_fetch)
+        max_count = self.max_tweets_to_fetch
         found_saved = None
 
         tweets = []
         while len(tweets) < max_count:
             tweet = None
-            for trial in range(20):
+            for trial in range(RETRY_COUNT):
                 try:
-                    tweet = timeline.next()
+                    if use_cursor:
+                        tweet = tweets_iterable.next()
+                    else:
+                        tweet = next(tweets_iterable)
                     break
                 except StopIteration as e:
                     break
@@ -96,10 +102,14 @@ class FavoriteSaverBot:
                     log.exception(e)
                     log.error(e)
                     log.error(f'Next trial: {trial + 2}')
-                    sleep(5)
+
+                    if trial < RETRY_COUNT - 1:
+                        time.sleep(RETRY_DELAY_SECONDS)
+                    else:
+                        raise
 
             if tweet is None:
-                log.error(f'Failed to fetch next tweet.')
+                log.error(f'Failed to fetch next tweet. Tweet is None.')
                 break
 
             log.info(
@@ -113,13 +123,13 @@ class FavoriteSaverBot:
 
             id = tweet.id_str
             if id in self.marked_as_saved:
-                log.debug(f'Found a saved tweet. id: {id}')
+                log.debug(f'Found a saved tweet. Id: {id}.')
                 found_saved = id
-                # break # Uncomment after verifying
+                break  # TODO: Uncomment after verifying.
             else:
-                log.debug(f'Keeping tweet. id: {id}')
+                log.debug(f'Keeping tweet. Id: {id}.')
                 if found_saved is not None:
-                    log.error(f'Found a new tweet {id} tweet after a saved tweet {found_saved}')
+                    log.error(f'Found a new tweet {id} tweet after a saved tweet {found_saved}.')
 
         return tweets
 
@@ -171,14 +181,20 @@ class FavoriteSaverBot:
     def download_media_and_adjust_urls(self, tweets: List[Status]) -> List[Status]:
         new_tweets = []
         for tweet in tweets:
-            tweet_json = tweet._json
-            new_tweet_json = json.loads(json.dumps(tweet_json))
-            self.search_for_media_urls(new_tweet_json)
-            new_tweet = Status.parse(self.twitter, new_tweet_json)
+            tweet_json = json.loads(json.dumps(tweet._json))
+            self.visit_media_urls(tweet_json)
+            new_tweet = Status.parse(self.twitter, tweet_json)
             new_tweets.append(new_tweet)
+
+        todo = True
+        if todo:
+            breakpoint()
+            import sys
+            sys.exit(0)
+
         return new_tweets
 
-    def search_for_media_urls(self, data):
+    def visit_media_urls(self, json_data):
         keys_to_extract = [
             'profile_image_url',
             'profile_image_url_https',
@@ -186,17 +202,22 @@ class FavoriteSaverBot:
             'media_url_https',
         ]
 
-        if isinstance(data, list):
-            for item in data:
-                self.search_for_media_urls(item)
+        if isinstance(json_data, list):
+            for item in json_data:
+                self.visit_media_urls(item)
 
-        elif isinstance(data, dict):
-            for key, value in data.items():
+        elif isinstance(json_data, dict):
+            for key, value in json_data.items():
                 if isinstance(value, str):
-                    if key in keys_to_extract or key == 'url' and value.find('pbs.twimg') >= 0:
-                        data[key] = self.download_media_url(value)
+                    should_download = (
+                        key in keys_to_extract
+                        or key == 'url' and 'pbs.twimg' in value
+                    )
+                    if should_download:
+                        adjusted_url = self.download_media_url(value)
+                        json_data[key] = adjusted_url
                 else:
-                    self.search_for_media_urls(value)
+                    self.visit_media_urls(value)
 
     def download_media_url(self, media_url: str) -> str:
         relpath = re.sub(r'^https?://', '', media_url)
@@ -208,30 +229,31 @@ class FavoriteSaverBot:
         # http_media_url = f'http://{relpath}'
         log.info(f'Downloading {media_url} to {output_path}')
 
-        trials = 20
-        while True:
+        for trial in range(RETRY_COUNT):
             try:
-                trials -= 1
                 response = requests.get(media_url)
+
                 response.raise_for_status()
                 data = response.content
+
+                _write(data, output_path)
                 break
             except Exception as e:
                 log.exception(e)
                 log.error(e)
                 log.warning(response.status_code)
-                if trials == 0:
+
+                if trial >= RETRY_COUNT - 1:
                     log.exception(e)
                     return media_url
-                    pass
-                    break
-                    # raise
-
-        ensure_parent_dir(output_path)
-        with open(output_path, 'wb') as f:
-            f.write(data)
 
         return media_url
+
+
+def _write(data: bytearray, path: str):
+    ensure_parent_dir(path)
+    with open(path, 'wb') as f:
+        f.write(data)
 
 
 def _sort_tweets(tweets):
