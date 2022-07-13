@@ -69,6 +69,8 @@ class FavoriteSaverBot:
                 log.exception(e)
                 raise
 
+        breakpoint()
+
         exit(0)  # TODO
 
         log.info(f'Fetching tweets')
@@ -255,22 +257,10 @@ class FavoriteSaverBot:
         if media_url.startswith('http'):
             return media_url
 
-        if 'legacy/original' not in media_url:
-            return media_url
-
         original_relpath = media_url
         original_path = os.path.join(self.root_path, original_relpath)
-        original_hash = calculate_file_hash(original_path)
-
-        if original_hash in md5sum_cache:
-            retrospective_relpath = md5sum_cache[original_hash]
-            retrospective_path = os.path.join(self.root_path, retrospective_relpath)
-
-            if is_identical_file(original_path, retrospective_path):
-                return retrospective_relpath
-            else:
-                log.warning('Hash collision.')
-                breakpoint()
+        active_paths.add(original_path)
+        return media_url
 
         # breakpoint()
         return media_url
@@ -606,3 +596,6 @@ def is_identical_file(path, reference_path):
         assert not len(f.read())
 
     return bytes == reference_bytes
+
+
+active_paths = set()
