@@ -178,10 +178,24 @@ class FavoriteSaverBot:
         for tweet in tqdm.tqdm(tweets, desc=f'Downloading media {year:04}/{month:02}.'):
             tweet_json = json.loads(json.dumps(tweet._json))
             self.visit_media_urls(tweet_json)
+            self.visit_media_urls_for_active_paths(tweet_json)
             new_tweet = Status.parse(self.twitter, tweet_json)
             new_tweets.append(new_tweet)
 
         return new_tweets
+
+    def visit_media_urls_for_active_paths(self, data):
+        if isinstance(data, list):
+            for item in data:
+                self.visit_media_urls_for_active_paths(item)
+        elif isinstance(data, dict):
+            for key, value in data.items():
+                self.visit_media_urls_for_active_paths(value)
+        elif isinstance(data, str):
+            if data.startswith('data/media'):
+                path = os.path.join(self.root_path, data)
+                active_paths.add(path)
+                assert os.path.isfile(path), path
 
     def visit_media_urls(self, json_data):
         # TODO: Enable.
@@ -257,6 +271,8 @@ class FavoriteSaverBot:
                     variant[key] = adjusted_url
 
     def download_media_url(self, media_url: str) -> str:
+        return media_url  # TODO : Remove.
+
         if not media_url.startswith('http'):
             return media_url
 
