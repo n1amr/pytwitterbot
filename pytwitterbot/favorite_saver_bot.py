@@ -1,3 +1,4 @@
+from curses import meta
 import json
 import logging
 import os
@@ -20,7 +21,7 @@ from pytwitterbot.file_utils import (
 
 log = logging.getLogger(__name__)
 
-TWEETS_INDEX_VAR_NAME = 'var tweet_index = '
+TWEETS_INDEX_HEADER = 'var tweet_index = '
 
 MAX_TWEETS_TO_FETCH = 100
 
@@ -58,21 +59,6 @@ class FavoriteSaverBot:
         partitioned_new_tweets = self.partition_by_month(new_tweets)
 
         self.merge_new_tweets(partitioned_new_tweets)
-
-        saved_tweets = self.load_partition(2022, 6)
-        log.info(f'Loaded {len(saved_tweets)} saved tweets.')
-        return
-
-        all_tweets = new_tweets + saved_tweets
-        all_tweets = _deduplicate_tweets(all_tweets)
-        all_tweets = _sort_tweets(all_tweets)
-        self.store_tweets(all_tweets)
-        log.info(f'Saved {len(all_tweets)} tweets.')
-
-        for tweet in all_tweets:
-            self.config.mark_saved(tweet.id)
-
-        self.config.commit_saved_marks()
 
     def fetch_tweets(self) -> List[Status]:
         tweet_count_per_fetch = 5
@@ -148,6 +134,9 @@ class FavoriteSaverBot:
     def _tweets_index_path(self):
         return os.path.join(self.root_path, 'data', 'js', 'tweet_index.js')
 
+    def get_tweets_index_path(self):
+        return os.path.join(self.root_path, 'data', 'js', 'tweet_index.js')
+
     def load_partition(self, year: int, month: int) -> List[Status]:
         tweets = []
 
@@ -175,28 +164,40 @@ class FavoriteSaverBot:
 
         return tweets
 
-    def store_tweets(self, tweets: List[Status]):
+    def store_tweets(self, tweets: List[Status], year: int, month: int):
+        partition_path = self.get_tweets_partition_path(year, month)
+
         json_tweets = [tweet._json for tweet in tweets]
-        write_text(
-            f'{TWEETS_VAR_NAME}{json.dumps(json_tweets)}',
-            self._tweets_path,
-        )
-        write_json(json_tweets, f'{self._tweets_path}on')
 
-        if os.path.isfile(self._tweets_index_path):
-            tweet_index_content = load_text(self._tweets_index_path)
-            assert tweet_index_content.startswith(TWEETS_INDEX_VAR_NAME), tweet_index_content[:100]
-            tweet_index_json_content = tweet_index_content[len(TWEETS_INDEX_VAR_NAME):]
-            tweet_index = json.loads(tweet_index_json_content)
+        write_json_with_header(json_tweets, partition_path, header=_partition_header(year, month))
+        write_json(json_tweets, f'{partition_path}.gitignored.json')  # TODO: Remove
+
+        new_partition_metadata = {
+            'tweet_count': len(tweets),
+            'month': month,
+            'year': year,
+            'file_name': f'data/js/tweets/{year:04}_{month:02}.js',
+            'var_name': f'tweets_{year:04}_{month:02}',
+        }
+
+        index_path = self.get_tweets_index_path()
+        if os.path.isfile(index_path):
+            partitions_metadata = load_json_with_header(index_path, header=TWEETS_INDEX_HEADER)
         else:
-            tweet_index = [{'tweet_count': 0}]
+            partitions_metadata = []
 
-        tweet_index[0]['tweet_count'] = len(tweets)
-        write_text(
-            f'{TWEETS_INDEX_VAR_NAME}{json.dumps(tweet_index)}',
-            self._tweets_index_path,
-        )
-        write_json(tweet_index, f'{self._tweets_index_path}on')
+        key_to_metadata = {}
+        for metadata in partitions_metadata + [new_partition_metadata]:
+            key = (metadata['year'], metadata['month'])
+            key_to_metadata[key] = metadata
+
+        partitions_metadata = [
+            kv[1]
+            for kv in sorted(key_to_metadata.items(), key=lambda kv: kv[0])
+        ]
+
+        write_json_with_header(partitions_metadata, index_path, header=TWEETS_INDEX_HEADER)
+        write_json(partitions_metadata, f'{index_path}.gitignored.json')  # TODO: Remove.
 
     def download_media_and_adjust_urls(self, tweets: List[Status]) -> List[Status]:
         new_tweets = []
@@ -277,7 +278,21 @@ class FavoriteSaverBot:
         return partitioned_tweets
 
     def merge_new_tweets(self, partitioned_new_tweets: Dict[Tuple[int, int], List[Status]]):
-        pass
+        for (year, month), new_tweets in partitioned_new_tweets.items():
+            saved_tweets = self.load_partition(year, month)
+            log.info(f'Loaded {len(saved_tweets)} saved tweets.')
+
+            all_tweets = new_tweets + saved_tweets
+            all_tweets = _deduplicate_tweets(all_tweets)
+            all_tweets = _sort_tweets(all_tweets)
+
+            self.store_tweets(all_tweets, year, month)
+            log.info(f'Saved {len(all_tweets)} tweets for partition {year:04}/{month:02}.')
+
+            for tweet in all_tweets:
+                self.config.mark_saved(tweet.id)
+
+        self.config.commit_saved_marks()
 
 
 def _write(data: bytearray, path: str):
@@ -309,3 +324,20 @@ def _deduplicate_tweets(tweets):
 
 def _partition_header(year: int, month: int) -> str:
     return f'Grailbird.data.tweets_{year:04}_{month:02} = '
+
+
+def load_json_with_header(path, header):
+    content = load_text(path)
+    assert content.startswith(header), content[:len(header) * 2]
+
+    json_text = content[len(header):]
+    data = json.loads(json_text)
+
+    return data
+
+
+def write_json_with_header(data, path, header, *, indent=2):
+    json_text = json.dumps(data, indent=indent, ensure_ascii=False)
+    content = f'{header}{json_text}'
+
+    write_text(content, path)
