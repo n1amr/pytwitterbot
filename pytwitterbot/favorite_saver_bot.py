@@ -45,7 +45,7 @@ class FavoriteSaverBot:
 
     def start(self):
         log.info(f'Fetching tweets')
-        new_tweets = self.fetch_tweets()
+        new_tweets = self.fetch_new_tweets()
         log.info(f'Fetched {len(new_tweets)} new tweets.')
 
         log.info('Downloading media')
@@ -55,7 +55,7 @@ class FavoriteSaverBot:
 
         self.merge_new_tweets(partitioned_new_tweets)
 
-    def fetch_tweets(self) -> List[Status]:
+    def fetch_new_tweets(self) -> List[Status]:
         tweet_count_per_fetch = 5
         use_cursor = False  # TODO
         if use_cursor:
@@ -68,11 +68,11 @@ class FavoriteSaverBot:
             tweets_iterable = self.twitter.get_favorites(count=tweet_count_per_fetch)
             tweets_iterable = iter(tweets_iterable)
 
-        max_count = self.max_tweets_to_fetch
         found_saved = 0
 
-        tweets = []
-        while len(tweets) < max_count:
+        fetched_tweets = []
+        new_tweets = []
+        while len(fetched_tweets) < self.max_tweets_to_fetch:
             tweet = None
             for trial in range(RETRY_COUNT):
                 try:
@@ -98,7 +98,7 @@ class FavoriteSaverBot:
                 break
 
             log.debug(f'Fetched tweet. {_summarize_tweet(tweet)}')
-            tweets.append(tweet)
+            fetched_tweets.append(tweet)
 
             id = tweet.id_str
             if id in self.marked_as_saved:
@@ -108,10 +108,11 @@ class FavoriteSaverBot:
                     break
             else:
                 log.info(f'Found new tweet. {_summarize_tweet(tweet)}.')
+                new_tweets.append(tweet)
                 if found_saved != 0:
                     log.Warning(f'Found a new tweet {id} tweet after {found_saved} saved tweets.')
 
-        return tweets
+        return new_tweets
 
     def get_tweets_partition_path(self, year: int, month: int):
         return os.path.join(self.root_path, 'data', 'js', 'tweets', f'{year:04}_{month:02}.js')
