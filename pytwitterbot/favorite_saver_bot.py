@@ -46,11 +46,20 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
     def start(self):
-        keys = existing_partition_keys
-        for key in keys:
+        for year, month in existing_partition_keys:
+            key = (year, month)
+
+            log.info(f'Downloading media for partition {key}.')
+
+            partition_tweets = self.load_partition(year, month)
+            self.download_media_and_adjust_urls(partition_tweets)
+
+            partitioned_new_tweets = {key: partition_tweets}
+
+            self.merge_new_tweets(partitioned_new_tweets)
+
             try:
-                partitioned_new_tweets = {key: []}
-                self.merge_new_tweets(partitioned_new_tweets)
+                pass
             except Exception as e:
                 log.error(f'Cannot load {key}')
                 log.exception(e)
@@ -238,9 +247,12 @@ class FavoriteSaverBot:
                     variant[backup_key] = value
 
     def download_media_url(self, media_url: str) -> str:
+        if not media_url.startswith('http'):
+            return media_url
+
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
-        local_relpath = f'data/media/{local_relpath}'
+        local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
 
         local_path = os.path.join(self.root_path, local_relpath)
 
@@ -253,6 +265,9 @@ class FavoriteSaverBot:
         for trial in range(RETRY_COUNT):
             try:
                 response = requests.get(media_url)
+
+                if response.status_code in [403, 404]:
+                    return media_url
 
                 response.raise_for_status()
                 data = response.content
