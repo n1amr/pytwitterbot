@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 TWEETS_INDEX_HEADER = 'var tweet_index = '
 
 MAX_TWEETS_TO_FETCH = 100
-MAX_TWEETS_TO_FETCH = 10  # TODO
 
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
