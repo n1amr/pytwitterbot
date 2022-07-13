@@ -262,6 +262,8 @@ class FavoriteSaverBot:
         # http_media_url = f'http://{relpath}'
         log.info(f'Downloading {media_url} to {local_path}.')
 
+        response = None
+
         for trial in range(RETRY_COUNT):
             try:
                 response = requests.get(media_url)
@@ -277,7 +279,8 @@ class FavoriteSaverBot:
             except Exception as e:
                 log.exception(e)
                 log.error(e)
-                log.warning(response.status_code)
+                if response is not None:
+                    log.warning(response.status_code)
 
                 if trial >= RETRY_COUNT - 1:
                     log.exception(e)
