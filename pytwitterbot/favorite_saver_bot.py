@@ -216,7 +216,8 @@ class FavoriteSaverBot:
                     if should_download:
                         media_url = value
                         backup_key = f'__backup__{key}'
-                        # json_data[backup_key] = media_url # TODO
+                        if value.startswith('http'):
+                            json_data[backup_key] = media_url
 
                         local_url = self.download_media_url(media_url)
                         json_data[key] = local_url
@@ -251,28 +252,18 @@ class FavoriteSaverBot:
                     adjusted_url = self.download_media_url(value)
                     backup_key = f'__backup__{key}'
                     variant[key] = adjusted_url
-                    # variant[backup_key] = value # TODO
+                    if value.startswith('http'):
+                        variant[backup_key] = value
 
     def download_media_url(self, media_url: str) -> str:
-        if media_url.startswith('http'):
-            return media_url
-
-        original_relpath = media_url
-        original_path = os.path.join(self.root_path, original_relpath)
-        active_paths.add(original_path)
-        return media_url
-
-        # breakpoint()
-        return media_url
-
         if not media_url.startswith('http'):
             return media_url
 
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
         # local_relpath = f'data/media/tweepy/{local_relpath}'
-        # local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
         local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
+        # local_relpath = f'data/media/legacy/original/{local_relpath}'
 
         local_path = os.path.join(self.root_path, local_relpath)
 
