@@ -252,7 +252,7 @@ class FavoriteSaverBot:
 
         for tweet in tweets:
             dt = tweet.created_at
-            key = [dt.year, dt.month]
+            key = (dt.year, dt.month)
             partitioned_tweets.setdefault(key, []).append(tweet)
 
         return partitioned_tweets
