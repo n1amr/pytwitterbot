@@ -8,7 +8,7 @@ import tweepy
 
 from time import sleep
 from tweepy.models import Status
-from typing import List
+from typing import Dict, Iterable, List, Tuple
 
 from pytwitterbot.config import Config
 from pytwitterbot.file_utils import (
@@ -57,6 +57,8 @@ class FavoriteSaverBot:
         log.info('Downloading media')
         new_tweets = self.download_media_and_adjust_urls(new_tweets)
 
+        partitioned_new_tweets = self.partition_by_month(new_tweets)
+
         saved_tweets = self.load_tweets()
         log.info(f'Loaded {len(saved_tweets)} saved tweets.')
 
@@ -68,6 +70,7 @@ class FavoriteSaverBot:
 
         for tweet in all_tweets:
             self.config.mark_saved(tweet.id)
+
         self.config.commit_saved_marks()
 
     def fetch_tweets(self) -> List[Status]:
@@ -186,12 +189,6 @@ class FavoriteSaverBot:
             new_tweet = Status.parse(self.twitter, tweet_json)
             new_tweets.append(new_tweet)
 
-        todo = True
-        if todo:
-            breakpoint()
-            import sys
-            sys.exit(0)
-
         return new_tweets
 
     def visit_media_urls(self, json_data):
@@ -249,6 +246,16 @@ class FavoriteSaverBot:
 
         # return media_url
         return relpath
+
+    def partition_by_month(self, tweets: Iterable[Status]) -> Dict[Tuple[int, int], List[Status]]:
+        partitioned_tweets = {}
+
+        for tweet in tweets:
+            dt = tweet.created_at
+            key = [dt.year, dt.month]
+            partitioned_tweets.setdefault(key, []).append(tweet)
+
+        return partitioned_tweets
 
 
 def _write(data: bytearray, path: str):
