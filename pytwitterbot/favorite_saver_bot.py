@@ -184,7 +184,7 @@ class FavoriteSaverBot:
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = f'media/{local_relpath}'
 
-        local_path = os.path.join(self.root_path, local_relpath)  # TODO; Adjust path.
+        local_path = os.path.join(self.root_path, local_relpath)
 
         if os.path.isfile(local_path):
             return local_relpath
