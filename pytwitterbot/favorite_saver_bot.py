@@ -45,8 +45,8 @@ class FavoriteSaverBot:
 
         self.muted_user_ids = self.config.muted_user_ids
         self.muted_usernames = self.config.muted_usernames
-        self.marked_as_saved = self.config.marked_as_saved
         self.marked_as_saved_cache_path = self.config.marked_as_saved_path
+        self._internal_saved_ids_cache = set()
 
         self.settings = self.config.settings['bots.favorite_saver.config']
         self.root_path = self.settings['root_path']
@@ -54,17 +54,13 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', DEFAULT_MAX_TWEETS_TO_FETCH)
 
     def start(self):
-        if False:
-            self.refresh_saved_cache()
-            new_tweets = []
+        self._internal_saved_ids_cache = self.refresh_saved_cache()
+
+        exit(0)
 
         log.info(f'Fetching tweets')
         new_tweets = self.fetch_new_tweets()
         log.info(f'Fetched {len(new_tweets)} new tweets.')
-
-        breakpoint()
-
-        exit(0)
 
         log.debug('Downloading media')
         new_tweets = self.download_media_and_adjust_urls(new_tweets)
@@ -85,6 +81,8 @@ class FavoriteSaverBot:
                 saved_ids.add(tweet.id_str)
 
         write_text('\n'.join(sorted(saved_ids)), self.marked_as_saved_cache_path)
+
+        return saved_ids
 
     # TODO: Remove after migration.
     def adjust_legacy_data(self):
@@ -157,7 +155,7 @@ class FavoriteSaverBot:
             fetched_tweets.append(tweet)
 
             id = tweet.id_str
-            if id in self.marked_as_saved:
+            if id in self._internal_saved_ids_cache:
                 found_saved += 1
                 log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
                 if found_saved >= MIN_SAVED_TWEETS_TO_TERMINATE:
@@ -375,11 +373,6 @@ class FavoriteSaverBot:
             new_partition_tweets = _sort_tweets(new_partition_tweets)
 
             self.write_partition(new_partition_tweets, year, month)
-
-            for tweet in new_partition_tweets:
-                self.config.mark_saved(tweet.id_str)
-
-        self.config.commit_saved_marks()
 
     def write_partition(self, tweets: List[Status], year: int, month: int):
         partition_path = self.get_tweets_partition_path(year, month)
