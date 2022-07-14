@@ -59,7 +59,7 @@ class FavoriteSaverBot:
 
         partitioned_new_tweets = self.partition_by_month(new_tweets)
 
-        self.merge_new_tweets(partitioned_new_tweets)
+        self.update_partitions(partitioned_new_tweets)
 
     # TODO: Remove after migration.
     def adjust_legacy_data(self):
@@ -76,7 +76,7 @@ class FavoriteSaverBot:
 
             partitioned_new_tweets = {key: partition_tweets}
 
-            self.merge_new_tweets(partitioned_new_tweets)
+            self.update_partitions(partitioned_new_tweets)
 
             try:
                 pass
@@ -332,7 +332,7 @@ class FavoriteSaverBot:
 
         return partitioned_tweets
 
-    def merge_new_tweets(self, partitioned_new_tweets: Dict[Tuple[int, int], List[Status]]):
+    def update_partitions(self, partitioned_new_tweets: Dict[Tuple[int, int], List[Status]]):
         for (year, month), new_tweets in partitioned_new_tweets.items():
             partition_tweets = self.load_partition(year, month)
 
@@ -340,14 +340,14 @@ class FavoriteSaverBot:
             new_partition_tweets = _deduplicate_tweets(new_partition_tweets)
             new_partition_tweets = _sort_tweets(new_partition_tweets)
 
-            self.store_tweets(new_partition_tweets, year, month)
+            self.write_partition(new_partition_tweets, year, month)
 
             for tweet in new_partition_tweets:
                 self.config.mark_saved(tweet.id_str)
 
         self.config.commit_saved_marks()
 
-    def store_tweets(self, tweets: List[Status], year: int, month: int):
+    def write_partition(self, tweets: List[Status], year: int, month: int):
         partition_path = self.get_tweets_partition_path(year, month)
 
         json_tweets = [tweet._json for tweet in tweets]
