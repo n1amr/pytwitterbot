@@ -233,10 +233,11 @@ class FavoriteSaverBot:
                             or 'video.twimg.com' in value and '.mp4' in value
                         )
                     )
+
                     if should_download:
                         media_url = value
-                        backup_key = f'{BACKUP_KEY_PREFIX}{key}'
-                        if value.startswith('http'):
+                        if media_url.startswith('http'):
+                            backup_key = f'{BACKUP_KEY_PREFIX}{key}'
                             json_data[backup_key] = media_url
 
                         local_url = self.download_media_url(media_url)
