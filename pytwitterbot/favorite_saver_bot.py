@@ -318,7 +318,7 @@ class FavoriteSaverBot:
                     log.exception(e)
                     raise
 
-        _write(data, local_path)
+        write_bytes(data, local_path)
 
         return local_relpath
 
@@ -385,7 +385,7 @@ class FavoriteSaverBot:
         log.info(f'Saved {len(tweets)} tweets for partition {year:04}/{month:02}.')
 
 
-def _write(data: bytearray, path: str):
+def write_bytes(data: bytearray, path: str):
     ensure_parent_dir(path)
     with open(path, 'wb') as f:
         f.write(data)
