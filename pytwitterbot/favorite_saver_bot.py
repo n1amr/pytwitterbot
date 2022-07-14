@@ -52,6 +52,10 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', DEFAULT_MAX_TWEETS_TO_FETCH)
 
     def start(self):
+        if False:
+            self.refresh_saved_cache()
+            new_tweets = []
+
         log.info(f'Fetching tweets')
         new_tweets = self.fetch_new_tweets()
         log.info(f'Fetched {len(new_tweets)} new tweets.')
@@ -104,14 +108,15 @@ class FavoriteSaverBot:
 
     def fetch_new_tweets(self) -> List[Status]:
         use_cursor = True
+        kwargs = dict(
+            count=TWEET_COUNT_PER_FETCH,
+            include_entities=True,
+            tweet_mode='extended',
+        )
         if use_cursor:
-            tweets_iterable = tweepy.Cursor(
-                self.twitter.get_favorites,
-                count=TWEET_COUNT_PER_FETCH,
-                include_entities=True,
-            ).items()
+            tweets_iterable = tweepy.Cursor(self.twitter.get_favorites, **kwargs).items()
         else:
-            tweets_iterable = iter(self.twitter.get_favorites(count=TWEET_COUNT_PER_FETCH))
+            tweets_iterable = iter(self.twitter.get_favorites(**kwargs))
 
         found_saved = 0
 
@@ -363,7 +368,7 @@ class FavoriteSaverBot:
     def write_partition(self, tweets: List[Status], year: int, month: int):
         partition_path = self.get_tweets_partition_path(year, month)
 
-        json_tweets = [tweet._json for tweet in tweets]
+        json_tweets = [_serialize_tweet(tweet) for tweet in tweets]
 
         write_json_with_header(json_tweets, partition_path, header=_partition_header(year, month))
         # write_json(json_tweets, f'{partition_path}.gitignored.json')
@@ -442,7 +447,12 @@ def write_json_with_header(data, path, header, *, indent=2):
 
 
 def _summarize_tweet(tweet: Status) -> str:
-    escaped_text = tweet.text.replace("\n", "<NL>")
+    if hasattr(tweet, 'full_text'):
+        tweet_text = tweet.full_text
+    else:
+        tweet_text = tweet.text
+
+    escaped_text = tweet_text.replace("\n", "<NL>")
 
     return (
         f'Id: {tweet.id_str}' +
@@ -617,3 +627,14 @@ if MIGRATION:
             assert not len(f.read())
 
         return bytes == reference_bytes
+
+
+def _serialize_tweet(tweet: Status) -> str:
+    data = tweet._json
+
+    if 'full_text' in data and 'text' not in data:
+        data['text'] = data['full_text']
+
+    # assert data['truncated'] == False # TODO: Convert old
+
+    return data

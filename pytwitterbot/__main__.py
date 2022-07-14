@@ -56,7 +56,7 @@ def main(args: argparse.Namespace):
             try:
                 response_text = str(e.response.content, 'utf-8')
                 log.error(response_text)
-            except:
+            except BaseException:
                 log.error(e)
             log.exception(e)
 
