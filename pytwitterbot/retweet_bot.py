@@ -26,7 +26,6 @@ class RetweetBot:
         self.muted_user_ids = config.muted_user_ids
         self.muted_usernames = config.muted_usernames
 
-
     def start(self):
         for query in self.queries:
             log.info(f'Searching for: {query}')

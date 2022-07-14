@@ -35,8 +35,6 @@ MIN_SAVED_TWEETS_TO_TERMINATE = 50
 
 BACKUP_KEY_PREFIX = '__backup__'
 
-IGNORED_SCREEN_NAMES = ['Rt_YourFavBands']
-
 
 class FavoriteSaverBot:
     def __init__(self, twitter: tweepy.API, auth_user: tweepy.User, config: Config):
@@ -45,6 +43,8 @@ class FavoriteSaverBot:
         self.bot_user = auth_user
         self.bot_user_id = self.bot_user.id_str
 
+        self.muted_user_ids = self.config.muted_user_ids
+        self.muted_usernames = self.config.muted_usernames
         self.marked_as_saved = self.config.marked_as_saved
         self.marked_as_saved_cache_path = self.config.marked_as_saved_path
 
@@ -163,7 +163,11 @@ class FavoriteSaverBot:
                 if found_saved >= MIN_SAVED_TWEETS_TO_TERMINATE:
                     break
             else:
-                should_skip = tweet.user.screen_name in IGNORED_SCREEN_NAMES
+                should_skip = (
+                    tweet.user.screen_name in self.muted_usernames
+                    or
+                    tweet.user.id_str in self.muted_user_ids
+                )
                 if should_skip:
                     log.info(f'Skipped new tweet. {_summarize_tweet(tweet)}.')
                     continue
