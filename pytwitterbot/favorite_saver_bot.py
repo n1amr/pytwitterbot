@@ -204,6 +204,7 @@ class FavoriteSaverBot:
             if MIGRATION:
                 self.visit_media_urls_for_active_paths(tweet_json)
             new_tweet = Status.parse(self.twitter, tweet_json)
+            assert json.dumps(new_tweet._json) == json.dumps(tweet_json)
             new_tweets.append(new_tweet)
 
         return new_tweets
