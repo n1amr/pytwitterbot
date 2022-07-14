@@ -46,7 +46,7 @@ class FavoriteSaverBot:
         self.muted_user_ids = self.config.muted_user_ids
         self.muted_usernames = self.config.muted_usernames
         self.marked_as_saved_cache_path = self.config.marked_as_saved_path
-        self._internal_saved_ids_cache = set()
+        self.saved_ids = set()
 
         self.settings = self.config.settings['bots.favorite_saver.config']
         self.root_path = self.settings['root_path']
@@ -54,9 +54,7 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', DEFAULT_MAX_TWEETS_TO_FETCH)
 
     def start(self):
-        self._internal_saved_ids_cache = self.refresh_saved_cache()
-
-        exit(0)
+        self.saved_ids = self.refresh_saved_cache()
 
         log.info(f'Fetching tweets')
         new_tweets = self.fetch_new_tweets()
@@ -155,7 +153,7 @@ class FavoriteSaverBot:
             fetched_tweets.append(tweet)
 
             id = tweet.id_str
-            if id in self._internal_saved_ids_cache:
+            if id in self.saved_ids:
                 found_saved += 1
                 log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
                 if found_saved >= MIN_SAVED_TWEETS_TO_TERMINATE:
