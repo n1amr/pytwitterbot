@@ -85,9 +85,7 @@ class FavoriteSaverBot:
                 log.exception(e)
                 raise
 
-        breakpoint()
-
-        exit(0)  # TODO
+        exit(0)
 
     def fetch_new_tweets(self) -> List[Status]:
         use_cursor = True
@@ -133,7 +131,7 @@ class FavoriteSaverBot:
             fetched_tweets.append(tweet)
 
             id = tweet.id_str
-            if id in self.marked_as_saved and False:  # TODO
+            if id in self.marked_as_saved:
                 found_saved += 1
                 log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
                 if found_saved >= 20:
