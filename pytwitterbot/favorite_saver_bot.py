@@ -26,7 +26,7 @@ MIGRATION = False
 
 TWEETS_INDEX_HEADER = 'var tweet_index = '
 
-MAX_TWEETS_TO_FETCH = 100
+DEFAULT_MAX_TWEETS_TO_FETCH = 100
 
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
@@ -48,7 +48,7 @@ class FavoriteSaverBot:
         self.settings = self.config.settings['bots.favorite_saver.config']
         self.root_path = self.settings['root_path']
 
-        self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
+        self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', DEFAULT_MAX_TWEETS_TO_FETCH)
 
     def start(self):
         log.info(f'Fetching tweets')
