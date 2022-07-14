@@ -54,7 +54,7 @@ class FavoriteSaverBot:
         new_tweets = self.fetch_new_tweets()
         log.info(f'Fetched {len(new_tweets)} new tweets.')
 
-        log.info('Downloading media')
+        log.debug('Downloading media')
         new_tweets = self.download_media_and_adjust_urls(new_tweets)
 
         partitioned_new_tweets = self.partition_by_month(new_tweets)
@@ -178,9 +178,9 @@ class FavoriteSaverBot:
 
         return tweets
 
-    def download_media_and_adjust_urls(self, tweets: List[Status], year: int, month: int) -> List[Status]:
+    def download_media_and_adjust_urls(self, tweets: List[Status]) -> List[Status]:
         new_tweets = []
-        for tweet in tqdm.tqdm(tweets, desc=f'Downloading media {year:04}/{month:02}.'):
+        for tweet in tqdm.tqdm(tweets, desc=f'Downloading media.'):
             tweet_json = json.loads(json.dumps(tweet._json))
             self.visit_media_urls(tweet_json)
             if MIGRATION:
