@@ -30,10 +30,12 @@ DEFAULT_MAX_TWEETS_TO_FETCH = 100
 
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
-TWEET_COUNT_PER_FETCH = 5
-MIN_SAVED_TWEETS_TO_TERMINATE = 100
+TWEET_COUNT_PER_FETCH = 50
+MIN_SAVED_TWEETS_TO_TERMINATE = 50
 
 BACKUP_KEY_PREFIX = '__backup__'
+
+IGNORED_SCREEN_NAMES = ['Rt_YourFavBands']
 
 
 class FavoriteSaverBot:
@@ -59,6 +61,10 @@ class FavoriteSaverBot:
         log.info(f'Fetching tweets')
         new_tweets = self.fetch_new_tweets()
         log.info(f'Fetched {len(new_tweets)} new tweets.')
+
+        breakpoint()
+
+        exit(0)
 
         log.debug('Downloading media')
         new_tweets = self.download_media_and_adjust_urls(new_tweets)
@@ -157,6 +163,11 @@ class FavoriteSaverBot:
                 if found_saved >= MIN_SAVED_TWEETS_TO_TERMINATE:
                     break
             else:
+                should_skip = tweet.user.screen_name in IGNORED_SCREEN_NAMES
+                if should_skip:
+                    log.info(f'Skipped new tweet. {_summarize_tweet(tweet)}.')
+                    continue
+
                 log.info(f'Found new tweet. {_summarize_tweet(tweet)}.')
                 new_tweets.append(tweet)
                 if found_saved != 0:
