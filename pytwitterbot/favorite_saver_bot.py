@@ -278,16 +278,15 @@ class FavoriteSaverBot:
                     variant[key] = adjusted_url
 
     def download_media_url(self, media_url: str) -> str:
-        return media_url  # TODO : Remove.
-
         if not media_url.startswith('http'):
             return media_url
 
         local_relpath = re.sub(r'^https?://', '', media_url)
         local_relpath = re.sub(r'\?.*$', '', local_relpath)
-        # local_relpath = f'data/media/tweepy/{local_relpath}'
-        local_relpath = f'data/media/legacy/retrospective/{local_relpath}'
-        # local_relpath = f'data/media/legacy/original/{local_relpath}'
+        if MIGRATION:
+            local_relpath = f'data/media/legacy/retrospective/{local_relpath}'  # TODO: Remove
+        else:
+            local_relpath = f'data/media/tweepy/{local_relpath}'
 
         local_path = os.path.join(self.root_path, local_relpath)
 
@@ -295,15 +294,12 @@ class FavoriteSaverBot:
             return local_relpath
 
         # http_media_url = f'http://{relpath}'
-        log.debug(f'Downloading {media_url} to {local_path}.')  # TODO; INFO
+        log.info(f'Downloading {media_url} to {local_path}.')
         response = None
 
         for trial in range(RETRY_COUNT):
             try:
                 response = requests.get(media_url)
-
-                if response.status_code in [403, 404]:
-                    return media_url
 
                 response.raise_for_status()
                 data = response.content
