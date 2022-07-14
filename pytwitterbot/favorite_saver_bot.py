@@ -300,21 +300,25 @@ class FavoriteSaverBot:
         for trial in range(RETRY_COUNT):
             try:
                 response = requests.get(media_url)
-
                 response.raise_for_status()
+
                 data = response.content
 
-                _write(data, local_path)
                 break
             except Exception as e:
                 log.exception(e)
                 log.error(e)
+
                 if response is not None:
-                    log.warning(response.status_code)
+                    log.warning(f'Failed to fetch media url: {media_url}. Status code: {response.status_code}.')
+                    if response.status_code in [404]:
+                        raise
 
                 if trial >= RETRY_COUNT - 1:
                     log.exception(e)
-                    return media_url
+                    raise
+
+        _write(data, local_path)
 
         return local_relpath
 
