@@ -29,6 +29,12 @@ def write_json(data, path):
         json.dump(data, file, indent=2, ensure_ascii=False)
 
 
+def write_bytes(data: bytearray, path: str):
+    ensure_parent_dir(path)
+    with open(path, 'wb') as f:
+        f.write(data)
+
+
 def write_text(text, path):
     ensure_parent_dir(path)
     with open(path, 'w', encoding='utf-8') as file:

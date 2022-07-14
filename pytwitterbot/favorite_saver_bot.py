@@ -14,8 +14,8 @@ from typing import Dict, Iterable, List, Tuple
 
 from pytwitterbot.config import Config
 from pytwitterbot.file_utils import (
-    ensure_parent_dir,
     load_text,
+    write_bytes,
     write_text,
 )
 
@@ -383,12 +383,6 @@ class FavoriteSaverBot:
         # write_json(partitions_metadata, f'{index_path}.gitignored.json')
 
         log.info(f'Saved {len(tweets)} tweets for partition {year:04}/{month:02}.')
-
-
-def write_bytes(data: bytearray, path: str):
-    ensure_parent_dir(path)
-    with open(path, 'wb') as f:
-        f.write(data)
 
 
 def _sort_tweets(tweets):
