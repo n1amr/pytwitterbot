@@ -31,6 +31,7 @@ MAX_TWEETS_TO_FETCH = 100
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
 TWEET_COUNT_PER_FETCH = 5
+MIN_SAVED_TWEETS_TO_TERMINATE = 20
 
 BACKUP_KEY_PREFIX = '__backup__'
 
@@ -134,7 +135,7 @@ class FavoriteSaverBot:
             if id in self.marked_as_saved:
                 found_saved += 1
                 log.debug(f'Found a saved tweet. Id: {id}. Found saved: {found_saved}.')
-                if found_saved >= 20:
+                if found_saved >= MIN_SAVED_TWEETS_TO_TERMINATE:
                     break
             else:
                 log.info(f'Found new tweet. {_summarize_tweet(tweet)}.')
