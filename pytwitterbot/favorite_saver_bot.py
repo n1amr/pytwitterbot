@@ -31,7 +31,7 @@ DEFAULT_MAX_TWEETS_TO_FETCH = 100
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
 TWEET_COUNT_PER_FETCH = 5
-MIN_SAVED_TWEETS_TO_TERMINATE = 20
+MIN_SAVED_TWEETS_TO_TERMINATE = 100
 
 BACKUP_KEY_PREFIX = '__backup__'
 
@@ -44,6 +44,7 @@ class FavoriteSaverBot:
         self.bot_user_id = self.bot_user.id_str
 
         self.marked_as_saved = self.config.marked_as_saved
+        self.marked_as_saved_cache_path = self.config.marked_as_saved_path
 
         self.settings = self.config.settings['bots.favorite_saver.config']
         self.root_path = self.settings['root_path']
@@ -61,6 +62,19 @@ class FavoriteSaverBot:
         partitioned_new_tweets = self.partition_by_month(new_tweets)
 
         self.update_partitions(partitioned_new_tweets)
+
+    def refresh_saved_cache(self):
+        saved_ids = set()
+
+        for filename in os.listdir(os.path.join(self.root_path, 'data/js/tweets')):
+            filename = filename.split('.')[0]
+            year_str, month_str = filename.split('_')
+            year, month = int(year_str), int(month_str)
+            tweets = self.load_partition(year, month)
+            for tweet in tweets:
+                saved_ids.add(tweet.id_str)
+
+        write_text('\n'.join(sorted(saved_ids)), self.marked_as_saved_cache_path)
 
     # TODO: Remove after migration.
     def adjust_legacy_data(self):
