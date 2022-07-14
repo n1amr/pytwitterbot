@@ -1,15 +1,14 @@
-from glob import iglob
-from hashlib import md5
 import json
 import logging
 import os
 import re
-from statistics import median_grouped
 import requests
 import time
 import tqdm
 import tweepy
 
+from glob import iglob
+from hashlib import md5
 from tweepy.models import Status
 from typing import Dict, Iterable, List, Tuple
 
@@ -23,6 +22,8 @@ from pytwitterbot.file_utils import (
 
 log = logging.getLogger(__name__)
 
+MIGRATION = False
+
 TWEETS_INDEX_HEADER = 'var tweet_index = '
 
 MAX_TWEETS_TO_FETCH = 100
@@ -30,6 +31,8 @@ MAX_TWEETS_TO_FETCH = 100
 RETRY_COUNT = 20
 RETRY_DELAY_SECONDS = 5
 TWEET_COUNT_PER_FETCH = 5
+
+BACKUP_KEY_PREFIX = '__backup__'
 
 
 class FavoriteSaverBot:
@@ -47,6 +50,19 @@ class FavoriteSaverBot:
         self.max_tweets_to_fetch = self.settings.get('max_tweets_to_fetch', MAX_TWEETS_TO_FETCH)
 
     def start(self):
+        log.info(f'Fetching tweets')
+        new_tweets = self.fetch_new_tweets()
+        log.info(f'Fetched {len(new_tweets)} new tweets.')
+
+        log.info('Downloading media')
+        new_tweets = self.download_media_and_adjust_urls(new_tweets)
+
+        partitioned_new_tweets = self.partition_by_month(new_tweets)
+
+        self.merge_new_tweets(partitioned_new_tweets)
+
+    # TODO: Remove after migration.
+    def adjust_legacy_data(self):
         fill_md5sum_cache(self.root_path)
 
         for year, month in sorted(existing_partition_keys, reverse=True):
@@ -72,17 +88,6 @@ class FavoriteSaverBot:
         breakpoint()
 
         exit(0)  # TODO
-
-        log.info(f'Fetching tweets')
-        new_tweets = self.fetch_new_tweets()
-        log.info(f'Fetched {len(new_tweets)} new tweets.')
-
-        log.info('Downloading media')
-        new_tweets = self.download_media_and_adjust_urls(new_tweets)
-
-        partitioned_new_tweets = self.partition_by_month(new_tweets)
-
-        self.merge_new_tweets(partitioned_new_tweets)
 
     def fetch_new_tweets(self) -> List[Status]:
         use_cursor = True
@@ -178,12 +183,14 @@ class FavoriteSaverBot:
         for tweet in tqdm.tqdm(tweets, desc=f'Downloading media {year:04}/{month:02}.'):
             tweet_json = json.loads(json.dumps(tweet._json))
             self.visit_media_urls(tweet_json)
-            self.visit_media_urls_for_active_paths(tweet_json)
+            if MIGRATION:
+                self.visit_media_urls_for_active_paths(tweet_json)
             new_tweet = Status.parse(self.twitter, tweet_json)
             new_tweets.append(new_tweet)
 
         return new_tweets
 
+    # TODO: Remove after migration.
     def visit_media_urls_for_active_paths(self, data):
         if isinstance(data, list):
             for item in data:
@@ -198,7 +205,6 @@ class FavoriteSaverBot:
                 assert os.path.isfile(path), path
 
     def visit_media_urls(self, json_data):
-        # TODO: Enable.
         keys_to_extract = [
             'profile_image_url',
             'profile_image_url_https',
@@ -215,21 +221,21 @@ class FavoriteSaverBot:
             for key in keys:
                 value = json_data[key]
 
-                if key == 'variants':
-                    self.visit_best_variants(value)
-                    continue
-
                 if isinstance(value, str):
-                    should_download = (
+                    if key == 'variants':
+                        self.visit_best_variants(value)
+                        continue
+
+                    should_download = not key.startswith(BACKUP_KEY_PREFIX) and (
                         key in keys_to_extract
                         or key == 'url' and (
                             'pbs.twimg' in value
                             or 'video.twimg.com' in value and '.mp4' in value
                         )
-                    ) and not key.startswith('__backup__')
+                    )
                     if should_download:
                         media_url = value
-                        backup_key = f'__backup__{key}'
+                        backup_key = f'{BACKUP_KEY_PREFIX}{key}'
                         if value.startswith('http'):
                             json_data[backup_key] = media_url
 
@@ -262,8 +268,8 @@ class FavoriteSaverBot:
 
             for key in list(variant.keys()):
                 value = variant[key]
-                if 'url' in key and not key.startswith('__backup__'):
-                    backup_key = f'__backup__{key}'
+                if 'url' in key and not key.startswith(BACKUP_KEY_PREFIX):
+                    backup_key = f'{BACKUP_KEY_PREFIX}{key}'
                     if value.startswith('http'):
                         variant[backup_key] = value
 
@@ -438,171 +444,168 @@ def _summarize_tweet(tweet: Status) -> str:
     )
 
 
-existing_partition_keys = [
-    (2010, 6),
-    (2011, 3),
-    (2011, 8),
-    (2011, 10),
-    (2011, 11),
-    (2011, 12),
-    (2012, 1),
-    (2012, 2),
-    (2012, 3),
-    (2012, 4),
-    (2012, 5),
-    (2012, 6),
-    (2012, 7),
-    (2012, 8),
-    (2012, 9),
-    (2012, 10),
-    (2012, 11),
-    (2012, 12),
-    (2013, 1),
-    (2013, 3),
-    (2013, 4),
-    (2013, 5),
-    (2013, 6),
-    (2013, 7),
-    (2013, 8),
-    (2013, 9),
-    (2013, 10),
-    (2013, 11),
-    (2013, 12),
-    (2014, 1),
-    (2014, 2),
-    (2014, 3),
-    (2014, 4),
-    (2014, 5),
-    (2014, 6),
-    (2014, 7),
-    (2014, 8),
-    (2014, 9),
-    (2014, 10),
-    (2014, 11),
-    (2014, 12),
-    (2015, 1),
-    (2015, 2),
-    (2015, 3),
-    (2015, 4),
-    (2015, 5),
-    (2015, 6),
-    (2015, 7),
-    (2015, 8),
-    (2015, 9),
-    (2015, 10),
-    (2015, 11),
-    (2015, 12),
-    (2016, 1),
-    (2016, 2),
-    (2016, 3),
-    (2016, 4),
-    (2016, 5),
-    (2016, 6),
-    (2016, 7),
-    (2016, 8),
-    (2016, 9),
-    (2016, 10),
-    (2016, 11),
-    (2016, 12),
-    (2017, 1),
-    (2017, 2),
-    (2017, 3),
-    (2017, 4),
-    (2017, 5),
-    (2017, 6),
-    (2017, 8),
-    (2017, 9),
-    (2017, 11),
-    (2017, 12),
-    (2018, 1),
-    (2018, 3),
-    (2018, 4),
-    (2018, 5),
-    (2018, 6),
-    (2018, 7),
-    (2018, 8),
-    (2018, 9),
-    (2018, 10),
-    (2018, 11),
-    (2018, 12),
-    (2019, 2),
-    (2019, 3),
-    (2019, 4),
-    (2019, 7),
-    (2019, 8),
-    (2019, 9),
-    (2019, 10),
-    (2019, 11),
-    (2019, 12),
-    (2020, 1),
-    (2020, 2),
-    (2020, 3),
-    (2020, 4),
-    (2020, 5),
-    (2020, 6),
-    (2020, 7),
-    (2020, 8),
-    (2020, 9),
-    (2020, 10),
-    (2020, 11),
-    (2020, 12),
-    (2021, 1),
-    (2021, 2),
-    (2021, 3),
-    (2021, 4),
-    (2021, 5),
-    (2021, 6),
-    (2021, 7),
-    (2021, 8),
-    (2021, 9),
-    (2021, 10),
-    (2021, 11),
-    (2021, 12),
-    (2022, 1),
-    (2022, 2),
-    (2022, 3),
-    (2022, 4),
-    (2022, 5),
-    (2022, 6),
-]
+if MIGRATION:
+    existing_partition_keys = [
+        (2010, 6),
+        (2011, 3),
+        (2011, 8),
+        (2011, 10),
+        (2011, 11),
+        (2011, 12),
+        (2012, 1),
+        (2012, 2),
+        (2012, 3),
+        (2012, 4),
+        (2012, 5),
+        (2012, 6),
+        (2012, 7),
+        (2012, 8),
+        (2012, 9),
+        (2012, 10),
+        (2012, 11),
+        (2012, 12),
+        (2013, 1),
+        (2013, 3),
+        (2013, 4),
+        (2013, 5),
+        (2013, 6),
+        (2013, 7),
+        (2013, 8),
+        (2013, 9),
+        (2013, 10),
+        (2013, 11),
+        (2013, 12),
+        (2014, 1),
+        (2014, 2),
+        (2014, 3),
+        (2014, 4),
+        (2014, 5),
+        (2014, 6),
+        (2014, 7),
+        (2014, 8),
+        (2014, 9),
+        (2014, 10),
+        (2014, 11),
+        (2014, 12),
+        (2015, 1),
+        (2015, 2),
+        (2015, 3),
+        (2015, 4),
+        (2015, 5),
+        (2015, 6),
+        (2015, 7),
+        (2015, 8),
+        (2015, 9),
+        (2015, 10),
+        (2015, 11),
+        (2015, 12),
+        (2016, 1),
+        (2016, 2),
+        (2016, 3),
+        (2016, 4),
+        (2016, 5),
+        (2016, 6),
+        (2016, 7),
+        (2016, 8),
+        (2016, 9),
+        (2016, 10),
+        (2016, 11),
+        (2016, 12),
+        (2017, 1),
+        (2017, 2),
+        (2017, 3),
+        (2017, 4),
+        (2017, 5),
+        (2017, 6),
+        (2017, 8),
+        (2017, 9),
+        (2017, 11),
+        (2017, 12),
+        (2018, 1),
+        (2018, 3),
+        (2018, 4),
+        (2018, 5),
+        (2018, 6),
+        (2018, 7),
+        (2018, 8),
+        (2018, 9),
+        (2018, 10),
+        (2018, 11),
+        (2018, 12),
+        (2019, 2),
+        (2019, 3),
+        (2019, 4),
+        (2019, 7),
+        (2019, 8),
+        (2019, 9),
+        (2019, 10),
+        (2019, 11),
+        (2019, 12),
+        (2020, 1),
+        (2020, 2),
+        (2020, 3),
+        (2020, 4),
+        (2020, 5),
+        (2020, 6),
+        (2020, 7),
+        (2020, 8),
+        (2020, 9),
+        (2020, 10),
+        (2020, 11),
+        (2020, 12),
+        (2021, 1),
+        (2021, 2),
+        (2021, 3),
+        (2021, 4),
+        (2021, 5),
+        (2021, 6),
+        (2021, 7),
+        (2021, 8),
+        (2021, 9),
+        (2021, 10),
+        (2021, 11),
+        (2021, 12),
+        (2022, 1),
+        (2022, 2),
+        (2022, 3),
+        (2022, 4),
+        (2022, 5),
+        (2022, 6),
+    ]
 
-# existing_partition_keys = [
-#     (2014, 11),
-# ]
+    # existing_partition_keys = [
+    #     (2014, 11),
+    # ]
 
-md5sum_cache: Dict[str, List[str]] = {}
+    md5sum_cache: Dict[str, List[str]] = {}
 
+    active_paths = set()
 
-def fill_md5sum_cache(root_path):
-    for path in iglob(root_path + '/data/media/legacy/retrospective/**', recursive=True):
-        if os.path.isdir(path):
-            continue
-        relpath = os.path.relpath(path, root_path)
-        hash = calculate_file_hash(path)
-        md5sum_cache[hash] = os.path.relpath(path, root_path)
-        # print(md5sum_cache)
-        # exit(0)
+    def fill_md5sum_cache(root_path):
+        for path in iglob(root_path + '/data/media/legacy/retrospective/**', recursive=True):
+            if os.path.isdir(path):
+                continue
+            relpath = os.path.relpath(path, root_path)
+            hash = calculate_file_hash(path)
+            md5sum_cache[hash] = os.path.relpath(path, root_path)
+            # print(md5sum_cache)
+            # exit(0)
 
+    def calculate_file_hash(path):
+        with open(path, 'rb') as f:
+            bytes = f.read()
+            assert not len(f.read())
 
-def calculate_file_hash(path):
-    with open(path, 'rb') as f:
-        bytes = f.read()
-        assert not len(f.read())
+        hash = md5(bytes).hexdigest()
+        return hash
 
-    hash = md5(bytes).hexdigest()
-    return hash
+    def is_identical_file(path, reference_path):
+        with open(path, 'rb') as f:
+            bytes = f.read()
+            assert not len(f.read())
 
+        with open(reference_path, 'rb') as f:
+            reference_bytes = f.read()
+            assert not len(f.read())
 
-def is_identical_file(path, reference_path):
-    with open(path, 'rb') as f:
-        bytes = f.read()
-        assert not len(f.read())
-
-    with open(reference_path, 'rb') as f:
-        reference_bytes = f.read()
-        assert not len(f.read())
-
-    return bytes == reference_bytes
-
-
-active_paths = set()
+        return bytes == reference_bytes
