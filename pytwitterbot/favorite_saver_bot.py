@@ -9,6 +9,7 @@ import tweepy
 
 from glob import iglob
 from hashlib import md5
+from requests.exceptions import HTTPError
 from tweepy.models import Status
 from typing import Dict, Iterable, List, Tuple
 
@@ -211,9 +212,14 @@ class FavoriteSaverBot:
         new_tweets = []
         for tweet in tqdm.tqdm(tweets, desc=f'Downloading media.'):
             tweet_json = json.loads(json.dumps(tweet._json))
-            self.visit_media_urls(tweet_json)
-            if MIGRATION:
-                self.visit_media_urls_for_active_paths(tweet_json)
+            try:
+                self.visit_media_urls(tweet_json)
+                if MIGRATION:
+                    self.visit_media_urls_for_active_paths(tweet_json)
+            except HTTPError as e:
+                if e.response is not None and e.response.status_code in [403]:
+                    log.warning(f'Forbidden HTTP Error. Tweet: {tweet.full_text}. Error: {e}')
+                breakpoint()
             new_tweet = Status.parse(self.twitter, tweet_json)
             assert json.dumps(new_tweet._json) == json.dumps(tweet_json)
             new_tweets.append(new_tweet)
