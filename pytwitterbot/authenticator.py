@@ -1,4 +1,5 @@
 import logging
+import os
 import tweepy
 
 from pytwitterbot import api_keys
@@ -15,7 +16,23 @@ class Authenticator:
         self.config = config
         self.retry = retry
 
-    def get_api_client(self) -> tweepy.API:
+    def get_api_client_v2(self) -> tweepy.Client:
+        consumer_key = os.environ['TWITTER_CONSUMER_KEY']
+        consumer_secret = os.environ['TWITTER_CONSUMER_SECRET']
+        access_token = os.environ['TWITTER_ACCESS_TOKEN']
+        access_token_secret = os.environ['TWITTER_ACCESS_TOKEN_SECRET']
+
+        client = tweepy.Client(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+            wait_on_rate_limit=True,
+        )
+
+        return client
+
+    def get_api_client_v1(self) -> tweepy.API:
         auth = tweepy.OAuthHandler(
             api_keys.consumer_key,
             api_keys.consumer_secret,

@@ -11,7 +11,7 @@
             "module": "pytwitterbot",
             "console": "integratedTerminal",
             "args": [
-                "/home/n1amr/.twitter-bots/bot-05-saver",
+                "/home/n1amr/.twitter-bots/off-06-favorites",
             ],
         },
     ]

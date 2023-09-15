@@ -38,11 +38,11 @@ BACKUP_KEY_PREFIX = '__backup__'
 
 
 class FavoriteSaverBot:
-    def __init__(self, twitter: tweepy.API, auth_user: tweepy.User, config: Config):
+    def __init__(self, twitter: tweepy.Client, auth_user: tweepy.user.User, config: Config):
         self.config = config
         self.twitter = twitter
         self.bot_user = auth_user
-        self.bot_user_id = self.bot_user.id_str
+        self.bot_user_id = self.bot_user.id
 
         self.muted_user_ids = self.config.muted_user_ids
         self.muted_usernames = self.config.muted_usernames
@@ -110,6 +110,12 @@ class FavoriteSaverBot:
         exit(0)
 
     def fetch_new_tweets(self) -> List[Status]:
+        liked_tweets = self.twitter.get_liked_tweets(
+            self.bot_user_id,
+            max_results=5,
+            user_auth=False,
+        )
+
         use_cursor = True
         kwargs = dict(
             count=TWEET_COUNT_PER_FETCH,
@@ -122,6 +128,7 @@ class FavoriteSaverBot:
             tweets_iterable = iter(self.twitter.get_favorites(**kwargs))
 
         found_saved = 0
+        breakpoint()
 
         fetched_tweets = []
         new_tweets = []
